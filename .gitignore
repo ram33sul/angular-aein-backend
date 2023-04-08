@@ -1,0 +1,8 @@
+user/.env
+user/node_modules
+
+messages/.env
+messages/node_modules
+
+gateway/.env
+gateway/node_modules
