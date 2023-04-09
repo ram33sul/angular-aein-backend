@@ -100,6 +100,27 @@ export const getOverallMessages = async (userId) => {
                         _id: 1,
                         to: 1,
                         from: 1,
+                        isNewMessage: {
+                            $cond: [
+                                {
+                                    $and: [
+                                        {
+                                            $eq: [
+                                                "$to._id",
+                                                userId
+                                            ]
+                                        },{
+                                            $eq: [
+                                                "$seen",
+                                                false
+                                            ]
+                                        }
+                                    ]
+                                },
+                                1,
+                                0
+                            ]
+                        }
                     }
                 }, {
                     $sort: {
@@ -130,6 +151,9 @@ export const getOverallMessages = async (userId) => {
                         },
                         from: {
                             $first: "$from"
+                        },
+                        newMessageCount: {
+                            $sum: "$isNewMessage"
                         }
                     }
                 }, {
@@ -148,4 +172,32 @@ export const getOverallMessages = async (userId) => {
             reject({message: "Internal error occured!", error});
         }
     })
+}
+
+export const doMarkSeen = ({viewedUser, sentUser}) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if(!(viewedUser && sentUser)){
+                reject({message: "Viewed and sent users are required!"});
+                return;
+            }
+            await messages.updateMany({
+                "from._id": sentUser,
+                "to._id": viewedUser,
+                "seen": false
+            },{
+                $set: {
+                    seen: true
+                }
+            }).then(() => {
+                resolve({message: "Messages marked as seen"});
+            }).catch((error) => {
+                console.log(error);
+                reject({message: "Database error at doMarkSeen!"});
+            })
+        } catch (error) {
+            console.log(error);
+            reject({message: "Internal error occured at doMarkSeen!"});
+        }
+    }) 
 }
