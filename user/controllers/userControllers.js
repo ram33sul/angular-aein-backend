@@ -1,4 +1,4 @@
-import { changePasswordService, googleLoginService, loginService, sendSmsOtpService, signupService, userDetailsService, usersListService, verifySmsOtpService, verifyUserService } from '../services/userServices.js'
+import { changePasswordService, editProfileService, googleLoginService, loginService, sendSmsOtpService, signupService, userDetailsService, usersListService, verifySmsOtpService, verifyUserService } from '../services/userServices.js'
 
 export const postLogin = async (req, res) => {
     try {
@@ -139,5 +139,19 @@ export const doChangePassword = async (req, res) => {
     } catch (error) {
         console.log(error);
         return res.status(400).send({message: "Internal error occured at doChangePassword!"});
+    }
+}
+
+export const doEditProfile = async (req,res) => {
+    try {
+        editProfileService({...req.body, user: req.verifiedUser}).then((user) => {
+            return res.status(200).json(user);
+        }).catch((error) => {
+            console.log(error);
+            return res.status(400).send(error);
+        })
+    } catch (error) {
+        console.log(error);
+        return res.status(400).send({message: "Internal error occured at doEditProfile!"});
     }
 }

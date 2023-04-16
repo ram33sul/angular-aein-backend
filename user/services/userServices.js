@@ -1,9 +1,11 @@
-import { validate, exists, validateEmail } from "../validation/validate.js";
+import { validate, exists, validateEmail, validateName, validateUsername, validateBio } from "../validation/validate.js";
 import User from "../model/userSchema.js";
 import jwt from "jsonwebtoken";
 import jwtDecode from "jwt-decode";
 import bcrypt from 'bcrypt';
 import twilio from 'twilio';
+import { v2 as cloudinary} from 'cloudinary';
+import fs from 'fs';
 
 export const signupService = ({...data}) => {
     return new Promise(async (resolve, reject) => {
@@ -108,7 +110,7 @@ export const verifyUserService = (token) => {
                         reject({message: 'No such User!'});
                         return;
                     }
-                    resolve(userData);
+                    resolve({userData, expiresAt: data.exp * 1000});
                 }
             });
         } catch (error) {
@@ -266,5 +268,83 @@ export const changePasswordService = ({userId, newPassword}) => {
             console.log(error);
             reject({message: "Internal error occured at changePasswordservice!"});
         }
+    })
+}
+
+export const editProfileService = ({name, username, bio, user}) => {
+    return new Promise(async (resolve, reject) => {
+        try{
+            const userId = user?._id;
+            if(!userId){
+                reject({message: "UserId is required!"});
+                return;
+            }
+            let errors = [];
+            if(!name){
+                errors[errors.length] = {field: 'name', message: "Name is required!"};
+            }
+            if(!username){
+                errors[errors.length] = {field: 'username', message: "Username is required!"};
+            }
+            if(errors.length){
+                reject(errors)
+                return;
+            }
+            bio = bio?.trim();
+            const validName = validateName(name);
+            const validUsername = validateUsername(username);
+            const validBio = validateBio(bio);
+            if(!validName){
+                errors[errors.length] = {field: 'name', message: "Name is not valid!"}
+            }
+            if(!validUsername){
+                errors[errors.length] = {field: 'username', message: "Username is not valid!"};
+            }
+            if(!validBio){
+                errors[errors.length] = {field: 'bio', message: "limit exceeded (5 lines & 50 letters!"};
+            }
+            if(errors.length){
+                reject(errors);
+                return;
+            }
+            // checking whether the username already exists
+            if(username !== user?.username){
+                const userWithSameUsername = await User.findOne({ username });
+                if(userWithSameUsername){
+                    reject([{field: 'username',message: "Username already exist"}]);
+                    return;
+                }
+            }
+            // saving user data in database
+            await User.updateOne({_id: userId},{$set:{name, username, bio}});
+            const userData = await User.findOne({_id: userId});
+            resolve(userData);
+        } catch (error) {
+            console.log(error);
+            reject({message: "Internal error occured at editProfileService!"});
+        }
+    })
+}
+
+export const uploadToCloudinary = async (localFilePath) => {
+    cloudinary.config({
+        cloud_name: "YOUR_CLOUD_NAME",
+        api_key: "YOUR_API_NAME",
+        api_secret: "YOUR_API_SECRET"
+      });
+    const mainFolderName = "main";
+    const filePathOnCloudinary = mainFolderName + '/' + localFilePath;
+    return cloudinary.uploader.upload(localFilePath,{"public_id": filePathOnCloudinary})
+    .then((result) => {
+        fs.unlinkSync(localFilePath);
+        return ({
+            message: "success",
+            url: result.url
+        })
+    }).catch((error) => {
+        fs.unlinkSync(localFilePath);
+        return ({
+            message: "fail"
+        })
     })
 }

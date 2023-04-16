@@ -1,15 +1,12 @@
-import jwt from 'jsonwebtoken';
+import { verifyUserService } from "../services/userServices.js";
 
-const userAuth = (req, res, next) => {
-    const token = req.body.token || req.query.token || req.headers["x-access-token"];
-    if(!token){
-        return res.status(400).send({message: "Token is missing"});
-    }
-    try {
-        const decoded = jwt.verify(token, process.env.TOKEN_KEY);
-        req.user = decoded;
-    } catch {
-        return res.status(400).send({message: "Token error occured"})
-    }
-    return next();
+const auth = (req,res,next) => {
+    verifyUserService(req.cookies["aein-app-jwtToken"]).then(({userData}) => {
+        req.verifiedUser = userData;
+        next();
+    }).catch((error) => {
+        return res.status(400).send(error);
+    });
 }
+
+export default auth;

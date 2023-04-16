@@ -1,10 +1,11 @@
 import { createServer } from 'http';
-import express from 'express';
+import express, { response } from 'express';
 import ws, { WebSocketServer } from 'ws';
-import { doMarkSeen, getMessages, getOverallMessages, sendMessage } from './controllers/messagesControllers.js';
+import { deleteMessages, doMarkSeen, getMessages, getOverallMessages, sendMessage, verifyUserService } from './controllers/messagesControllers.js';
 import dotenv from 'dotenv';
 import database from './config/database.js';
-import messages from './model/messageSchema.js';
+
+
 dotenv.config();
 database.connect();
 
@@ -16,9 +17,20 @@ const clients = new Map();
 
 const chattingClients = new Map();
 
-wss.on('connection', (client, req) => {
+wss.on('connection',async (client, req) => {
 
-    const userId = new URLSearchParams(req.url.slice(1)).get('userId');
+    let userId;
+    await verifyUserService(req.headers.cookie).then((response) => {
+        userId = response;
+    }).catch((error) => {
+        console.log(error);
+    });
+
+    if(!userId){
+        return;
+    }
+
+    // const userId = new URLSearchParams(req.url.slice(1)).get('userId');
     clients.set(userId, client);
 
     if(chattingClients.get(userId)){
@@ -28,18 +40,20 @@ wss.on('connection', (client, req) => {
     client.on('message', (messageData, isBinary) => {
         messageData = JSON.parse(messageData);
         const type = messageData.type;
-
         if(type === 'sendMessage'){
-            const {from, to, content} = messageData;
-            sendMessage({from, to, content}).then((response) => {
+            const {from, to, content, mood} = messageData;
+            sendMessage({from, to, content, mood}).then((response) => {
                 broadcast({data: response, type: "sendMessage"}, isBinary, {from: response.from._id, to: response.to._id});
             }).catch((error) => {
                 console.log(error);
             })
         } else if (type === 'getMessages'){
-            const { from, to} = messageData;
-            getMessages({from, to}).then((response) => {
-                broadcast({messageData: response, type: "getMessages"}, isBinary, {from, to});
+            const { from, to, markSeen } = messageData;
+            getMessages({from, to, markSeen}).then((response) => {
+                broadcast({messageData: response, type: "getMessages"}, isBinary, {from});
+                doMarkSeen({viewedUser: from, sentUser: to}).then((response) => {
+                    broadcast({messageData: response, type: "markSeen"}, isBinary, {to});
+                })
             }).catch((error) => {
                 console.log(error);
             })
@@ -47,13 +61,6 @@ wss.on('connection', (client, req) => {
             const { userId } = messageData;
             getOverallMessages(userId).then((response) => {
                 broadcast({ data: response, type: "getOverallMessages"}, isBinary, {from: userId})
-            }).catch((error) => {
-                console.log(error);
-            })
-        } else if (type === 'markSeen'){
-            const { viewedUser, sentUser } = messageData;
-            doMarkSeen({viewedUser, sentUser}).then(() => {
-                broadcast({ type: "markSeen"}, isBinary, {to: sentUser});
             }).catch((error) => {
                 console.log(error);
             })
@@ -71,6 +78,18 @@ wss.on('connection', (client, req) => {
                 isOnline = false
             }
             broadcast({ isOnline, type: "isOnline"}, isBinary, {to: userIdWhoIsChecking});
+        } else if (type === 'deleteMessages'){
+            const { messages, userId } = messageData;
+            deleteMessages({messages, userId}).then(() => {
+                broadcast({status: true, type: 'deleteMessages'}, isBinary, {to: userId})
+            }).catch((error) =>{
+                console.log(error);
+            })
+        } else if (type === 'markSeen'){
+            const { viewedUser, sentUser } = messageData;
+            doMarkSeen({viewedUser, sentUser}).then((response) => {
+                broadcast({ messageData: response, type}, isBinary, {to: sentUser});
+            })
         }
     })
 

@@ -6,11 +6,12 @@ const userSchema = new mongoose.Schema({
     email: {type: String, unique: true},
     mobile: {type: Number},
     password: {type: String},
+    bio: {type: String, default: ''},
     status: {type: Boolean, default: true},
     followers: {type: Array, default: []},
     following: {type: Array, default: []},
     blockedUsers: {type: Array, default: []},
-    createdAt: {type: Date, default: new Date()}
+    createdAt: {type: Date, default: new Date()},
 })
 
 const user = mongoose.model("user", userSchema);

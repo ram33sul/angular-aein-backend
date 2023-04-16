@@ -1,9 +1,9 @@
-import { ObjectId } from 'bson';
-import messages from '../model/messageSchema.js'
+import Messages from '../model/messageSchema.js'
+import jwt from 'jsonwebtoken';
 
 export const sendMessage = (messageData) => {
-    const { from, to, content } = messageData;
-    let mood = messageData.mood ?? "no mood";
+    const { from, to, content, mood } = messageData;
+    console.log(mood);
     return new Promise(async (resolve, reject) => {
         try {
             if(!(from && to && content)){
@@ -14,7 +14,7 @@ export const sendMessage = (messageData) => {
                 reject({message: "sender and reciever cannot be same!"});
                 return;
             }
-            const data = await messages.create({
+            const data = await Messages.create({
                 from,
                 to,
                 content,
@@ -28,38 +28,56 @@ export const sendMessage = (messageData) => {
     })
 }
 
-export const getMessages = ({from, to}) => {
+export const getMessages = ({from, to, markSeen}) => {
     return new Promise(async (resolve, reject) => {
         const fromUserId = from;
         const toUserId = to;
+        const { viewedUser, sentUser } = markSeen;
         if(!(fromUserId && toUserId)){
             reject({message: "Both from and to is required"});
         }
         try {
-            await messages.aggregate([
-                {
-                    $match: {
-                        $or: [{
-                            "from._id": fromUserId,
-                            "to._id": toUserId
-                        },{
-                            "from._id": toUserId,
-                            "to._id": fromUserId
-                        }]
-                    }
-                }, {
-                    $sort: {
-                        sendAt: 1
-                    }
+            await Messages.updateMany({
+                "from._id": sentUser,
+                "to._id": viewedUser,
+                "seen": false
+            },{
+                $set: {
+                    seen: true
                 }
-            ]).then((messagesData) => {
-                resolve(messagesData);
+            }).then(async () => {
+                await Messages.aggregate([
+                    {
+                        $match: {
+                            $or: [{
+                                "from._id": fromUserId,
+                                "to._id": toUserId,
+                                deletedUsers: {
+                                    $nin: [viewedUser]
+                                }
+                            },{
+                                "from._id": toUserId,
+                                "to._id": fromUserId,
+                                deletedUsers: {
+                                    $nin: [viewedUser]
+                                }
+                            }]
+                        }
+                    }, {
+                        $sort: {
+                            sendAt: 1
+                        }
+                    }
+                ]).then((messagesData) => {
+                    resolve(messagesData);
+                }).catch((error) => {
+                    reject({message: "Database error occured!", error})
+                });
             }).catch((error) => {
-                reject({message: "Database error occured!", error})
-            });
-    
+                reject({message: "Database error occured while updating!", error});
+            })
         } catch (error) {
-            reject({messages: "Internal error occured!", error});
+            reject({message: "Internal error occured!", error});
         }
     })
 }
@@ -70,13 +88,19 @@ export const getOverallMessages = async (userId) => {
             reject({message: "User id is required!"});
         }
         try {
-            await messages.aggregate([
+            await Messages.aggregate([
                 {
                     $match: {
                         $or: [{
-                            "from._id": userId
+                            "from._id": userId,
+                            deletedUsers: {
+                                $nin: [userId]
+                            }
                         },{
-                            "to._id": userId
+                            "to._id": userId,
+                            deletedUsers: {
+                                $nin: [userId]
+                            }
                         }]
                     }
                 }, {
@@ -181,7 +205,7 @@ export const doMarkSeen = ({viewedUser, sentUser}) => {
                 reject({message: "Viewed and sent users are required!"});
                 return;
             }
-            await messages.updateMany({
+            await Messages.updateMany({
                 "from._id": sentUser,
                 "to._id": viewedUser,
                 "seen": false
@@ -189,8 +213,35 @@ export const doMarkSeen = ({viewedUser, sentUser}) => {
                 $set: {
                     seen: true
                 }
-            }).then(() => {
-                resolve({message: "Messages marked as seen"});
+            }).then(async () => {
+                await Messages.aggregate([
+                    {
+                        $match: {
+                            $or: [{
+                                "from._id": viewedUser,
+                                "to._id": sentUser,
+                                deletedUsers: {
+                                    $nin: [sentUser]
+                                }
+                            },{
+                                "from._id": sentUser,
+                                "to._id": viewedUser,
+                                deletedUsers: {
+                                    $nin: [sentUser]
+                                }
+                            }]
+                        }
+                    }, {
+                        $sort: {
+                            sendAt: 1
+                        }
+                    }
+                ]).then((messagesData) => {
+                    console.log(messagesData);
+                    resolve(messagesData);
+                }).catch((error) => {
+                    reject({message: "Database error occured!", error})
+                }); 
             }).catch((error) => {
                 console.log(error);
                 reject({message: "Database error at doMarkSeen!"});
@@ -200,4 +251,70 @@ export const doMarkSeen = ({viewedUser, sentUser}) => {
             reject({message: "Internal error occured at doMarkSeen!"});
         }
     }) 
+}
+
+export const verifyUserService = (cookie) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if(!cookie){
+                reject(false);
+                return;
+            }
+            function cookieToObject(cookieStr) {
+                const cookieArr = cookieStr.split("; ");
+                const cookieObj = {};
+              
+                cookieArr.forEach((pair) => {
+                  const [key, value] = pair.split("=");
+                  cookieObj[key] = value;
+                });
+              
+                return cookieObj;
+            }
+            let cookieAsObject = cookieToObject(cookie);
+            const token = cookieAsObject["aein-app-jwtToken"];
+            if(!token){
+                reject(false);
+                return;
+            }
+            jwt.verify(token, process.env.TOKEN_KEY, async (error, data) => {
+                if(error) {
+                    reject(false);
+                } else {
+                    resolve(data?.userId);
+                }
+            });
+        } catch (error) {
+            console.log(error);
+            reject(false);
+        }
+    })
+}
+
+export const deleteMessages = ({messages, userId}) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if(!messages){
+                reject({message: "List of messages is missing!"});
+                return;
+            }
+            messages.map((message) => Object(message));
+            await Messages.updateMany({
+                _id: {
+                    $in: messages
+                }
+            },{
+                $push: {
+                    deletedUsers: userId
+                }
+            }).then(() => {
+                resolve(true)
+            }).catch((error) => {
+                reject({message: "Database error occured!"})
+            })
+        } catch (error) {
+            console.log(error);
+            reject({message: "Internal error occured!"});
+        }
+    })
 }

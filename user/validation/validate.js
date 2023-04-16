@@ -43,6 +43,10 @@ export const validateEmail = (email) => {
     // email must exist and should be valid
 }
 
+export const validateBio = (bio) => {
+    return (bio.length < 101 && bio.split(/\r\n|\r|\n/).length < 6);
+}
+
 export const validate = ({...values}) => {
     let errors = []
     if(values.name){
