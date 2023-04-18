@@ -76,3 +76,20 @@ export const validate = ({...values}) => {
     }
     return errors.length ? errors : false;
 }
+
+export const validatePost = (chats) => {
+    if(!chats || !chats.length){
+        return {status: false, message: "Chats are required!"}
+    }
+    if(chats.length > 6){
+        return {status: true, message: "Maximum 6 messages allowed! (unselect messages)"}
+    }
+    let string = ''
+    chats.forEach((message) => {
+        string += message.content
+    })
+    if(string.length > 501){
+        return {status: false, message: "Maximum 500 characters allowed! (unselect messages)"}
+    }
+    return {status: true}
+}

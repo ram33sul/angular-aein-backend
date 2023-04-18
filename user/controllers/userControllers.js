@@ -1,4 +1,4 @@
-import { changePasswordService, editProfileService, googleLoginService, loginService, sendSmsOtpService, signupService, userDetailsService, usersListService, verifySmsOtpService, verifyUserService } from '../services/userServices.js'
+import { blockUserService, blockedUsersListService, changePasswordService, editProfileService, followService, googleLoginService, loginService, sendSmsOtpService, signupService, unfollowService, userDetailsService, usersDetailsFromArray, usersListService, verifySmsOtpService, verifyUserService } from '../services/userServices.js'
 
 export const postLogin = async (req, res) => {
     try {
@@ -6,6 +6,7 @@ export const postLogin = async (req, res) => {
             res.cookie('aein-app-jwtToken',token, { httpOnly: true });
             return res.status(200).json({user, token});
         }).catch((error) => {
+            console.log(error);
             return res.status(400).send(error);
         })
     } catch (error) {
@@ -21,6 +22,7 @@ export const postSignup = async (req, res) => {
             res.cookie('aein-app-jwtToken',token, { httpOnly: true });
             return res.status(200).json({user, token});
         }).catch ((error) => {
+            console.log(error);
             return res.status(401).json(error);
         })
     } catch (error) {
@@ -31,9 +33,11 @@ export const postSignup = async (req, res) => {
 
 export const verifyUser = async (req, res) => {
     try {
-        verifyUserService(req.cookies["aein-app-jwtToken"]).then((userData) => {
+        const token = req.cookies["aein-app-jwtToken"] || req.query.token;
+        verifyUserService(token).then((userData) => {
             return res.status(200).json(userData);
         }).catch((error) => {
+            console.log(error);
             return res.status(400).send(error);
         });
     } catch(error) {
@@ -89,6 +93,7 @@ export const getUserDetails = async (req,res) => {
         userDetailsService({username, email}).then((response) => {
             return res.status(200).json(response);
         }).catch((error) => {
+            console.log(error);
             return res.status(400).send(error)
         })
     } catch (error) {
@@ -103,6 +108,7 @@ export const doSendSmsOtp = async (req,res) => {
         sendSmsOtpService({mobile}).then(() => {
             return res.status(200).json({message: `Otp send to ${mobile}`});
         }).catch((error) => {
+            console.log(error);
             return res.status(400).send(error)
         })
     } catch (error) {
@@ -119,6 +125,7 @@ export const doVerifySmsOtp = async (req, res) => {
             res.cookie("aein-app-jwtToken", token, {httpOnly: true})
             return res.status(200).json({user, token});
         }).catch((error) => {
+            console.log(error);
             return res.status(400).send(error)
         })
     } catch (error) {
@@ -134,6 +141,7 @@ export const doChangePassword = async (req, res) => {
         changePasswordService({userId, newPassword}).then(({user}) => {
             return res.status(200).json({user});
         }).catch((error) => {
+            console.log(error);
             return res.status(400).send(error);
         })
     } catch (error) {
@@ -144,7 +152,7 @@ export const doChangePassword = async (req, res) => {
 
 export const doEditProfile = async (req,res) => {
     try {
-        editProfileService({...req.body, user: req.verifiedUser}).then((user) => {
+        editProfileService({...req.body, profilePic: req.file, user: req.verifiedUser}).then((user) => {
             return res.status(200).json(user);
         }).catch((error) => {
             console.log(error);
@@ -153,5 +161,75 @@ export const doEditProfile = async (req,res) => {
     } catch (error) {
         console.log(error);
         return res.status(400).send({message: "Internal error occured at doEditProfile!"});
+    }
+}
+
+export const getUsersDetailsFromArray = (req,res) => {
+    try {
+        usersDetailsFromArray(req.body.usersList).then((response) => {
+            return res.status(200).json(response)
+        }).catch((error) => {
+            console.log(error);
+            return res.status(400).send(error);
+        })
+    } catch (error) {
+        console.log("Internal error at getUsersDetailsFromArray!");
+        return res.status(400).send({message: "Internal error occured at doEditProfile!"});
+    }
+}
+
+export const doFollow = (req,res) => {
+    try {
+        followService(req.body).then((response) => {
+            return res.status(200).json(response);
+        }).catch((error) => {
+            console.log(error);
+            return res.status(400).send(error);
+        })
+    } catch (error) {
+        console.log("Internal error at doFollow!");
+        return res.status(400).send([{message: "Internal error at doFollow!"}])
+    }
+}
+
+export const doUnfollow = (req,res) => {
+    try {
+        unfollowService(req.body).then((response) => {
+            return res.status(200).json(response);
+        }).catch((error) => {
+            console.log(error);
+            return res.status(400).send(error);
+        })
+    } catch (error) {
+        console.log("Internal error at doFollow!");
+        return res.status(400).send([{message: "Internal error at doFollow!"}])
+    }
+}
+
+export const doBlockUser = (req,res) => {
+    try {
+        blockUserService(req.body).then((response) => {
+            return res.status(200).json(response);
+        }).catch((error) => {
+            console.log(error);
+            return res.status(400).send(error);
+        })
+    } catch (error) {
+        console.log("Internal error at doBlockUser!");
+        return res.status(400).send([{message: "Internal error at doBlockUser!"}])
+    }
+}
+
+export const getBlockedUsersList = (req,res) => {
+    try {
+        blockedUsersListService(req.query).then((response) => {
+            return res.status(200).json(response);
+        }).catch((error) => {
+            console.log(error);
+            return res.status(400).send(error)
+        })
+    } catch (error) {
+        console.log("Internal error at getBlocketUsersList!")
+        return res.status(400).send([{message: "Internal error at getBlockedUsersList"}]);
     }
 }

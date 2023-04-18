@@ -6,6 +6,8 @@ import bcrypt from 'bcrypt';
 import twilio from 'twilio';
 import { v2 as cloudinary} from 'cloudinary';
 import fs from 'fs';
+import multer from "multer";
+import mongoose from "mongoose";
 
 export const signupService = ({...data}) => {
     return new Promise(async (resolve, reject) => {
@@ -43,7 +45,6 @@ export const signupService = ({...data}) => {
             const token = signToken(user._id);
             resolve({user, token});
         } catch (error) {
-            console.log(error);
             reject({message: "Internal error occured at signupService"});
         }
     })
@@ -76,7 +77,6 @@ export const loginService = ({...data}) => {
             }
 
         } catch (error) {
-            console.log(error);
             reject({message: "Internal error occured at loginService"});
         }
     });
@@ -114,7 +114,6 @@ export const verifyUserService = (token) => {
                 }
             });
         } catch (error) {
-            console.log(error);
             reject({message: 'Internal error occured at verifyUserService!'});
         }
     })
@@ -132,7 +131,6 @@ export const googleLoginService = (googleToken) => {
             const token = signToken(userData._id);
             resolve({user: userData, token});
         } catch (error) {
-            console.log(error);
             reject({message: 'Internal error occured at doGoogleLogin!'});
         }
     })
@@ -144,7 +142,6 @@ export const usersListService = (keyword) => {
             const users = await User.find({$or:[{ username: {$regex: keyword}},{ name: {$regex: keyword}}]});
             resolve(users);
         } catch (error) {
-            console.log(error);
             reject({message: 'Internal error occured at usersListService!'});
         }
     })
@@ -164,7 +161,6 @@ export const userDetailsService = ({username, email}) => {
             }
             resolve(user);
         } catch (error) {
-            console.log(error);
             reject({message: "Internal error occured at userDetailsService"});
         }
     })
@@ -193,11 +189,9 @@ export const sendSmsOtpService = ({mobile}) => {
                     resolve(true);
                 })
                 .catch((error) => {
-                    console.log(error);
                     reject({message: "Can't send OTP!"});
                 })
         } catch (error) {
-            console.log(error);
             reject({message: "Internal error occured at sendSmsOtpService!"});
         }
     })
@@ -229,7 +223,6 @@ export const verifySmsOtpService = ({mobile, otpCode}) => {
                     reject({message: "Otp expired!"});
                 })
         } catch (error) {
-            console.log(error);
             reject({message: "Internal error occured at verifySmsOtpService!"});
         }
     })
@@ -244,7 +237,6 @@ export const changePasswordService = ({userId, newPassword}) => {
                 return;
             }
             let userData = await User.findOne({_id: userId}).catch((error) => {
-                console.log(error);
                 reject({message: "Database error at changePasswordService!"});
                 return;
             });
@@ -254,24 +246,21 @@ export const changePasswordService = ({userId, newPassword}) => {
             }
             const hashedPassword = await bcrypt.hash(newPassword,10);
             await User.updateOne({_id: userId},{$set:{password: hashedPassword}}).catch((error) => {
-                console.log(error);
                 reject({message: "Database error at changePasswordService!"});
                 return;
             });
             userData = await User.findOne({_id: userId}).catch((error) => {
-                console.log(error);
                 reject({message: "Database error at changePasswordService!"});
                 return;
             });
             resolve({user: userData});
         } catch (error) {
-            console.log(error);
             reject({message: "Internal error occured at changePasswordservice!"});
         }
     })
 }
 
-export const editProfileService = ({name, username, bio, user}) => {
+export const editProfileService = ({name, username, bio, profilePic, user}) => {
     return new Promise(async (resolve, reject) => {
         try{
             const userId = user?._id;
@@ -315,22 +304,54 @@ export const editProfileService = ({name, username, bio, user}) => {
                     return;
                 }
             }
+            let profilePicUrl = ''
+            if(profilePic){
+                await uploadToCloudinary(`profilePics/${user?._id}.png`).then((result) => {
+                    profilePicUrl = result.url;
+                }).catch((error) => {
+                    reject([{message: "Can't be uploaded to cloudinary!"}]);
+                    return;
+                });
+            }
             // saving user data in database
             await User.updateOne({_id: userId},{$set:{name, username, bio}});
             const userData = await User.findOne({_id: userId});
             resolve(userData);
         } catch (error) {
-            console.log(error);
             reject({message: "Internal error occured at editProfileService!"});
         }
     })
 }
 
+export const fileUploadMulter = () => {
+    return multer({
+        storage: multer.diskStorage({
+            destination: function(req, file, cb) {
+              cb(null, 'profilePics/');
+            },
+            filename: function(req, file, cb) {
+                const fileName = `${req.verifiedUser._id}.png`;
+              cb(null, fileName);
+            }
+        }),
+        fileFilter: function(req, file, cb) {
+            if (file.mimetype !== 'image/png' && file.mimetype !== 'image/jpeg') {
+              req.fileValidationError = 'Only PNG and JPEG files are allowed';
+              return cb(null, false, req.fileValidationError);
+            }
+            cb(null, true);
+        },
+        limits: { fileSize: 1024 * 1024 * 1 }
+    }).single('image')
+}
+
+
+
 export const uploadToCloudinary = async (localFilePath) => {
     cloudinary.config({
-        cloud_name: "YOUR_CLOUD_NAME",
-        api_key: "YOUR_API_NAME",
-        api_secret: "YOUR_API_SECRET"
+        cloud_name: "db6r6str9",
+        api_key: "839247658482686",
+        api_secret: "tSezfaCf3bEOuaCYFQ0vNbOlKhk"      
       });
     const mainFolderName = "main";
     const filePathOnCloudinary = mainFolderName + '/' + localFilePath;
@@ -338,13 +359,239 @@ export const uploadToCloudinary = async (localFilePath) => {
     .then((result) => {
         fs.unlinkSync(localFilePath);
         return ({
-            message: "success",
             url: result.url
         })
     }).catch((error) => {
         fs.unlinkSync(localFilePath);
         return ({
-            message: "fail"
+            message: "Can't be uploaded to cloudinary!"
         })
+    })
+}
+
+export const usersDetailsFromArray = (usersList) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            if(!usersList){
+                reject([{message: "usersList is required!"}]);
+                return;
+            }
+            usersList = usersList.map(id => new mongoose.Types.ObjectId(id));
+            User.aggregate([
+                {
+                    $match: {
+                        _id: {
+                            $in: usersList
+                        }
+                    }
+                },{
+                    $sort: {
+                        _id: 1
+                    }
+                }
+            ]).then((response) => {
+                resolve(response)
+            }).catch((error) => {
+                console.log("Database error at userDetailsFromArray");
+                reject([{message: "Database error at userDetailsFromArray"}])
+            })
+        } catch (error) {
+            reject([{message: "Internal error at usersDetailsFromArray"}])
+        }
+    })
+}
+
+export const followService = ({followingUserId, followedUserId}) => {
+    return new Promise((resolve, reject) => {
+        try {
+            if(!(followedUserId && followingUserId)){
+                reject([{message: "followedUserId and followingUserId are required!"}])
+                return;
+            }
+            if(followedUserId === followingUserId){
+                reject([{message: "followedUserId and followingUserId can't be same!"}]);
+                return;
+            }
+            followedUserId = new mongoose.Types.ObjectId(followedUserId);
+            followingUserId = new mongoose.Types.ObjectId(followingUserId);
+            User.bulkWrite([
+                {
+                    updateOne: {
+                        filter: {
+                            _id: followingUserId
+                        },
+                        update: {
+                            $addToSet: {
+                                following: followedUserId
+                            }
+                        }
+                    }
+                }, {
+                    updateOne: {
+                        filter: {
+                            _id: followedUserId
+                        },
+                        update: {
+                            $addToSet: {
+                                followers: followingUserId
+                            }
+                        }
+                    }
+                }
+            ]).then(() => {
+                User.findOne({
+                    _id: followingUserId
+                }).then((response) => {
+                    resolve(response);
+                }).catch((error) => {
+                    reject([{message: "Database error at followService (2)!"}])
+                })
+            }).catch((error) => {
+                console.log(error);
+                reject([{message: "Database error at followService (1)!"}])
+            })
+        } catch (error) {
+            reject([{message: "Internal error at followService!"}])
+        }
+    })
+}
+
+export const unfollowService = ({unfollowingUserId, unfollowedUserId}) => {
+    return new Promise((resolve, reject) => {
+        try {
+            if(!(unfollowedUserId && unfollowingUserId)){
+                reject([{message: "unfollowedUserId and unfollowingUserId are required!"}])
+                return;
+            }
+            if(unfollowedUserId === unfollowingUserId){
+                reject([{message: "followedUserId and followingUserId can't be same!"}]);
+                return;
+            }
+            unfollowedUserId = new mongoose.Types.ObjectId(unfollowedUserId);
+            unfollowingUserId = new mongoose.Types.ObjectId(unfollowingUserId);
+            User.bulkWrite([
+                {
+                    updateOne: {
+                        filter: {
+                            _id: unfollowingUserId
+                        },
+                        update: {
+                            $pull: {
+                                following: unfollowedUserId
+                            }
+                        }
+                    }
+                }, {
+                    updateOne: {
+                        filter: {
+                            _id: unfollowedUserId
+                        },
+                        update: {
+                            $pull: {
+                                followers: unfollowingUserId
+                            }
+                        }
+                    }
+                }
+            ]).then(() => {
+                User.findOne({
+                    _id: unfollowingUserId
+                }).then((response) => {
+                    resolve(response);
+                }).catch((error) => {
+                    reject([{message: "Database error at followService (2)!"}])
+                })
+            }).catch((error) => {
+                console.log(error);
+                reject([{message: "Database error at followService (1)!"}])
+            })
+        } catch (error) {
+            reject([{message: "Internal error at followService!"}])
+        }
+    })
+}
+
+export const blockUserService = ({userId, userIdToBeBlocked}) => {
+    return new Promise((resolve, reject) => {
+        try {
+            if(!(userId && userIdToBeBlocked)){
+                return reject([{message: "userId and userIdToBeBlocked are required!"}]);
+            }
+            if(userId === userIdToBeBlocked){
+                return reject([{message: "userId and userIdToBeBlocked can't be same!"}])
+            }
+            userId = new mongoose.Types.ObjectId(userId);
+            userIdToBeBlocked = new mongoose.Types.ObjectId(userIdToBeBlocked);
+            User.updateOne({
+                _id: userId
+            },{
+                $addToSet: {
+                    blockedUsers: userIdToBeBlocked
+                }
+            }).then(() => {
+                User.findOne({
+                    _id: userId
+                }).then((response) => {
+                    resolve(response)
+                }).catch((error) => {
+                    reject([{message: "Database error at blockUserService (2)!"}])
+                })
+            }).catch((error) => {
+                reject([{message: "Database error at blockUserService (1)!"}])
+            })
+        } catch (error) {
+            reject([{message: "Internal error at blockUserService!"}])
+        }
+    })
+}
+
+export const blockedUsersListService = ({userId}) => {
+    return new Promise((resolve, reject) => {
+        try {
+            if(!userId){
+                reject([{message: "UserId is required!"}]);
+            }
+            userId = new mongoose.Types.ObjectId(userId)
+            User.aggregate([
+                {
+                    $match: {
+                        _id: userId
+                    }
+                },{
+                    $unwind: "$blockedUsers"
+                },{
+                    $lookup: {
+                        from: "users",
+                        localField: "blockedUsers",
+                        foreignField: "_id",
+                        as: "blockedUser"
+                    }
+                },{
+                    $project: {
+                        _id: {
+                            $first: "$blockedUser._id"
+                        },
+                        name: {
+                            $first: "$blockedUser.name"
+                        },
+                        username: {
+                            $first: "$blockedUser.username"
+                        },
+                        status: {
+                            $first: "$blockedUser.status"
+                        },
+                        profilePicUrl: {
+                            $first: "$blockedUser.profilePicUrl"
+                        }
+                    }
+                }
+            ]).then((response) => {
+                resolve(response)
+            }).catch((error) => {
+                reject([{message: "Database error at blockedUsersListService!"}]);
+            })
+        } catch (error) {
+            reject([{message: "Internal error at blockedUsersListService!"}])
+        }
     })
 }

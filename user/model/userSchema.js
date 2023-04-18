@@ -7,6 +7,7 @@ const userSchema = new mongoose.Schema({
     mobile: {type: Number},
     password: {type: String},
     bio: {type: String, default: ''},
+    profilePicUrl: {type: String, default: ''},
     status: {type: Boolean, default: true},
     followers: {type: Array, default: []},
     following: {type: Array, default: []},

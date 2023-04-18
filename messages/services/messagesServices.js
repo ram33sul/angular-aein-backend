@@ -8,7 +8,6 @@ export const messagingWebSocketService = () => {
         const wss = new WebSocketServer({server});
 
         wss.on('connection', (client, req) => {
-            console.log(clients);
             const userId = req.query.userId;
             clients.set(userId, client);
             client.on('message', ({from, to, message}, isBinary) => {

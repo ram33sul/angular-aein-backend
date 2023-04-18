@@ -1,6 +1,7 @@
 import express from 'express';
-import { doChangePassword, doEditProfile, doGoogleLogin, doLogout, doSendSmsOtp, doUsersList, doVerifySmsOtp, getUserDetails, postLogin, postSignup, verifyUser } from '../controllers/userControllers.js';
+import { doBlockUser, doChangePassword, doEditProfile, doFollow, doGoogleLogin, doLogout, doSendSmsOtp, doUnfollow, doUsersList, doVerifySmsOtp, getBlockedUsersList, getUserDetails, getUsersDetailsFromArray, postLogin, postSignup, verifyUser } from '../controllers/userControllers.js';
 import auth from '../authentication/auth.js';
+import { fileUploadMulter } from '../services/userServices.js';
 
 const router = express.Router();
 
@@ -24,7 +25,16 @@ router.post('/verifySmsOtp', doVerifySmsOtp);
 
 router.patch('/changePassword',auth, doChangePassword);
 
-router.patch('/editProfile', auth, doEditProfile)
+router.post('/usersDetailsFromArray', getUsersDetailsFromArray);
 
+router.patch('/editProfile', auth, fileUploadMulter(), doEditProfile);
+
+router.post('/follow', auth, doFollow);
+
+router.post('/unfollow', auth, doUnfollow);
+
+router.post('/blockUser', auth, doBlockUser);
+
+router.get('/blockedUsersList', auth, getBlockedUsersList);
 
 export default router;

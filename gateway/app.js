@@ -1,17 +1,12 @@
 import express from 'express';
-import cors from 'cors';
 import proxy from 'express-http-proxy';
-import cookieParser from 'cookie-parser'
 import dotenv from 'dotenv';
 
 const app = express();
 dotenv.config();
 
-app.use(express.json());
-app.use(cookieParser());
-
 app.use('/user', proxy('http://localhost:4002'));
-app.use('/uploadMulter', proxy('http://localhost:4010'));
+app.use('/post', proxy('http://localhost:4005'));
 app.use('/', proxy('http://localhost:4002'));
 
 

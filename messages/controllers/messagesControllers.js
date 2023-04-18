@@ -1,22 +1,24 @@
 import Messages from '../model/messageSchema.js'
 import jwt from 'jsonwebtoken';
+import axios from 'axios';
+import mongoose from 'mongoose';
 
-export const sendMessage = (messageData) => {
-    const { from, to, content, mood } = messageData;
-    console.log(mood);
+export const sendMessage = ({from, to, content, mood}) => {
     return new Promise(async (resolve, reject) => {
         try {
             if(!(from && to && content)){
                 reject({message: "Message data is not complete!"});
                 return;
             }
-            if(from._id === to._id){
+            if(from === to){
                 reject({message: "sender and reciever cannot be same!"});
                 return;
             }
+            from = new mongoose.Types.ObjectId(from);
+            to = new mongoose.Types.ObjectId(to);
             const data = await Messages.create({
-                from,
-                to,
+                from: from,
+                to: to,
                 content,
                 mood,
                 sendAt: new Date()
@@ -30,16 +32,20 @@ export const sendMessage = (messageData) => {
 
 export const getMessages = ({from, to, markSeen}) => {
     return new Promise(async (resolve, reject) => {
-        const fromUserId = from;
-        const toUserId = to;
-        const { viewedUser, sentUser } = markSeen;
+        let fromUserId = from;
+        let toUserId = to;
+        let { viewedUser, sentUser } = markSeen;
         if(!(fromUserId && toUserId)){
             reject({message: "Both from and to is required"});
         }
+        sentUser = new mongoose.Types.ObjectId(sentUser);
+        viewedUser = new mongoose.Types.ObjectId(viewedUser);
+        fromUserId = new mongoose.Types.ObjectId(fromUserId);
+        toUserId = new mongoose.Types.ObjectId(toUserId);
         try {
             await Messages.updateMany({
-                "from._id": sentUser,
-                "to._id": viewedUser,
+                "from": sentUser,
+                "to": viewedUser,
                 "seen": false
             },{
                 $set: {
@@ -50,14 +56,14 @@ export const getMessages = ({from, to, markSeen}) => {
                     {
                         $match: {
                             $or: [{
-                                "from._id": fromUserId,
-                                "to._id": toUserId,
+                                "from": fromUserId,
+                                "to": toUserId,
                                 deletedUsers: {
                                     $nin: [viewedUser]
                                 }
                             },{
-                                "from._id": toUserId,
-                                "to._id": fromUserId,
+                                "from": toUserId,
+                                "to": fromUserId,
                                 deletedUsers: {
                                     $nin: [viewedUser]
                                 }
@@ -87,17 +93,18 @@ export const getOverallMessages = async (userId) => {
         if(!userId){
             reject({message: "User id is required!"});
         }
+        userId = new mongoose.Types.ObjectId(userId)
         try {
             await Messages.aggregate([
                 {
                     $match: {
                         $or: [{
-                            "from._id": userId,
+                            "from": userId,
                             deletedUsers: {
                                 $nin: [userId]
                             }
                         },{
-                            "to._id": userId,
+                            "to": userId,
                             deletedUsers: {
                                 $nin: [userId]
                             }
@@ -109,12 +116,12 @@ export const getOverallMessages = async (userId) => {
                             $cond: [
                                 {
                                     $eq: [
-                                        "$from._id",
+                                        "$from",
                                         userId
                                     ]
                                 },
-                                "$to._id",
-                                "$from._id"
+                                "$to",
+                                "$from"
                             ]
                         },
                         content: 1,
@@ -130,7 +137,7 @@ export const getOverallMessages = async (userId) => {
                                     $and: [
                                         {
                                             $eq: [
-                                                "$to._id",
+                                                "$to",
                                                 userId
                                             ]
                                         },{
@@ -146,15 +153,13 @@ export const getOverallMessages = async (userId) => {
                             ]
                         }
                     }
-                }, {
+                },{
                     $sort: {
-                        sendAt: -1
+                        "sendAt": -1
                     }
                 }, {
                     $group: {
-                        _id: {
-                            foreignId: "$foreignId"
-                        },
+                        _id: "$foreignId",
                         content: {
                             $first: "$content"
                         },
@@ -182,13 +187,25 @@ export const getOverallMessages = async (userId) => {
                     }
                 }, {
                     $sort: {
-                        sendAt: -1
+                        _id: 1
                     }
                 }
-            ]).then((messageData) => {
-                resolve(messageData);
+            ]).then(async (messageData) => {
+                let foreignIds = [];
+                messageData.forEach((message) => {
+                    foreignIds[foreignIds.length] = message._id;
+                })
+                await axios.post(`${process.env.USER_SERVICE}/usersDetailsFromArray`, { usersList: foreignIds }).then((response) => {
+                    messageData = messageData.map((message, index) => {
+                        return {...message, foreignUser: response.data[index]}
+                    }).sort((a,b) => {
+                        return b.sendAt - a.sendAt
+                    })
+                    resolve(messageData);
+                }).catch((error) => {
+                    reject(error);
+                })
             }).catch((error) => {
-                console.log(error);
                 reject({message: "Database error occured!"});
             });
 
@@ -205,9 +222,11 @@ export const doMarkSeen = ({viewedUser, sentUser}) => {
                 reject({message: "Viewed and sent users are required!"});
                 return;
             }
+            sentUser = new mongoose.Types.ObjectId(sentUser);
+            viewedUser = new mongoose.Types.ObjectId(viewedUser);
             await Messages.updateMany({
-                "from._id": sentUser,
-                "to._id": viewedUser,
+                "from": sentUser,
+                "to": viewedUser,
                 "seen": false
             },{
                 $set: {
@@ -218,14 +237,14 @@ export const doMarkSeen = ({viewedUser, sentUser}) => {
                     {
                         $match: {
                             $or: [{
-                                "from._id": viewedUser,
-                                "to._id": sentUser,
+                                "from": viewedUser,
+                                "to": sentUser,
                                 deletedUsers: {
                                     $nin: [sentUser]
                                 }
                             },{
-                                "from._id": sentUser,
-                                "to._id": viewedUser,
+                                "from": sentUser,
+                                "to": viewedUser,
                                 deletedUsers: {
                                     $nin: [sentUser]
                                 }
@@ -237,17 +256,14 @@ export const doMarkSeen = ({viewedUser, sentUser}) => {
                         }
                     }
                 ]).then((messagesData) => {
-                    console.log(messagesData);
                     resolve(messagesData);
                 }).catch((error) => {
                     reject({message: "Database error occured!", error})
                 }); 
             }).catch((error) => {
-                console.log(error);
                 reject({message: "Database error at doMarkSeen!"});
             })
         } catch (error) {
-            console.log(error);
             reject({message: "Internal error occured at doMarkSeen!"});
         }
     }) 
@@ -285,7 +301,6 @@ export const verifyUserService = (cookie) => {
                 }
             });
         } catch (error) {
-            console.log(error);
             reject(false);
         }
     })
@@ -298,7 +313,8 @@ export const deleteMessages = ({messages, userId}) => {
                 reject({message: "List of messages is missing!"});
                 return;
             }
-            messages.map((message) => Object(message));
+            messages = messages.map((message) => new mongoose.Types.ObjectId(message._id));
+            userId = new mongoose.Types.ObjectId(userId)
             await Messages.updateMany({
                 _id: {
                     $in: messages
@@ -313,7 +329,6 @@ export const deleteMessages = ({messages, userId}) => {
                 reject({message: "Database error occured!"})
             })
         } catch (error) {
-            console.log(error);
             reject({message: "Internal error occured!"});
         }
     })

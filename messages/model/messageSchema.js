@@ -1,9 +1,9 @@
 import mongoose from "mongoose";
 
 const messageSchema = new mongoose.Schema({
-    from: {type: Object, require: true},
-    to: {type: Object, require: true},
-    content: {type: String, require: true},
+    from: {type: Object, required: true},
+    to: {type: Object, required: true},
+    content: {type: String, required: true},
     mood: {type: Object, default: {}},
     sendAt: {type: Date, default: new Date()},
     seen: {type: Boolean, default: false},

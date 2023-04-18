@@ -23,7 +23,7 @@ wss.on('connection',async (client, req) => {
     await verifyUserService(req.headers.cookie).then((response) => {
         userId = response;
     }).catch((error) => {
-        console.log(error);
+        console.log("User cannot be verified!");
     });
 
     if(!userId){
@@ -43,7 +43,7 @@ wss.on('connection',async (client, req) => {
         if(type === 'sendMessage'){
             const {from, to, content, mood} = messageData;
             sendMessage({from, to, content, mood}).then((response) => {
-                broadcast({data: response, type: "sendMessage"}, isBinary, {from: response.from._id, to: response.to._id});
+                broadcast({data: response, type: "sendMessage"}, isBinary, {from: response.from.toString(), to: response.to.toString()});
             }).catch((error) => {
                 console.log(error);
             })
