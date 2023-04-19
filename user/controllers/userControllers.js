@@ -1,4 +1,4 @@
-import { blockUserService, blockedUsersListService, changePasswordService, editProfileService, followService, googleLoginService, loginService, sendSmsOtpService, signupService, unfollowService, userDetailsService, usersDetailsFromArray, usersListService, verifySmsOtpService, verifyUserService } from '../services/userServices.js'
+import { blockUserService, blockedUsersListService, changePasswordService, editProfileService, followService, googleLoginService, loginService, sendSmsOtpService, shareProfileService, signupService, unblockUserService, unfollowService, userDetailsService, usersDetailsFromArray, usersListService, verifySmsOtpService, verifyUserService } from '../services/userServices.js'
 
 export const postLogin = async (req, res) => {
     try {
@@ -74,7 +74,7 @@ export const doGoogleLogin = async (req, res) => {
 export const doUsersList = async (req,res) => {
     const keyword = req.query.keyword ?? req.params.keyword;
     try {
-        usersListService(keyword).then((users) => {
+        usersListService({keyword, id: req.verifiedUser._id}).then((users) => {
             return res.status(200).send({users});
         }).catch((error) => {
             console.log(error);
@@ -88,9 +88,10 @@ export const doUsersList = async (req,res) => {
 
 export const getUserDetails = async (req,res) => {
     const username = req.query.username ?? req.params.username ?? req.body.username;
-    const email = req.query.email ?? req.query.email ?? req.body.email;
+    const email = req.query.email ?? req.params.email ?? req.body.email;
+    const userId = req.query.userId ?? req.params.userId ?? req.body.userId;
     try {
-        userDetailsService({username, email}).then((response) => {
+        userDetailsService({username, email, userId, id: req.verifiedUser._id}).then((response) => {
             return res.status(200).json(response);
         }).catch((error) => {
             console.log(error);
@@ -166,7 +167,7 @@ export const doEditProfile = async (req,res) => {
 
 export const getUsersDetailsFromArray = (req,res) => {
     try {
-        usersDetailsFromArray(req.body.usersList).then((response) => {
+        usersDetailsFromArray(req.body).then((response) => {
             return res.status(200).json(response)
         }).catch((error) => {
             console.log(error);
@@ -231,5 +232,47 @@ export const getBlockedUsersList = (req,res) => {
     } catch (error) {
         console.log("Internal error at getBlocketUsersList!")
         return res.status(400).send([{message: "Internal error at getBlockedUsersList"}]);
+    }
+}
+
+export const doUnblockUser = (req,res) => {
+    try {
+        unblockUserService(req.body).then((response) => {
+            return res.status(200).json(response);
+        }).catch((error) => {
+            console.log(error);
+            return res.status(400).send(error);
+        })
+    } catch (error) {
+        console.log("Internal error at doUnblockUser!");
+        return res.status(400).send([{message: "Internal error at doUnblockUser!"}])
+    }
+}
+
+export const doShareProfile = (req,res) => {
+    try {
+        shareProfileService(req.query).then((response) => {
+            return res.status(200).json(response)
+        }).catch((error) => {
+            console.log(error);
+            return res.status(400).send(error)
+        })
+    } catch (error) {
+        console.log("Internal error at doShareProfile!");
+        return res.status(400).send([{message: "Internal error at doShareProfile!"}])
+    }
+}
+
+export const getBlockedStatus = (req,res) =>{
+    try {
+        blockUserService(req.query).then((response) => {
+            return res.status(200).json(response)
+        }).catch((error) => {
+            console.log(error);
+            return res.status(400).send(error)
+        })
+    } catch (error) {
+        console.log("Internal error at getBlockedStatus!");
+        return res.status(400).send([{message: "Internal error at getBlockedStatus!"}])
     }
 }

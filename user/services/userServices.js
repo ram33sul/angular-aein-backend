@@ -7,7 +7,7 @@ import twilio from 'twilio';
 import { v2 as cloudinary} from 'cloudinary';
 import fs from 'fs';
 import multer from "multer";
-import mongoose from "mongoose";
+import mongoose, { mongo } from "mongoose";
 
 export const signupService = ({...data}) => {
     return new Promise(async (resolve, reject) => {
@@ -136,10 +136,33 @@ export const googleLoginService = (googleToken) => {
     })
 }
 
-export const usersListService = (keyword) => {
+export const usersListService = ({keyword, id}) => {
     return new Promise(async (resolve, reject) => {
         try {
-            const users = await User.find({$or:[{ username: {$regex: keyword}},{ name: {$regex: keyword}}]});
+            id = new mongoose.Types.ObjectId(id)
+            const users = await User.find({
+                $and: [
+                    {
+                        $or: [
+                            {
+                                username: {
+                                    $regex: keyword
+                                }
+                            },{
+                                name: {
+                                    $regex: keyword
+                                }
+                            }
+                        ]
+                    },{
+                        blockedUsers: {
+                            $nin: [
+                                id
+                            ]
+                        }
+                    }
+                ]
+            });
             resolve(users);
         } catch (error) {
             reject({message: 'Internal error occured at usersListService!'});
@@ -147,14 +170,36 @@ export const usersListService = (keyword) => {
     })
 }
 
-export const userDetailsService = ({username, email}) => {
+export const userDetailsService = ({username, email, userId, id}) => {
     return new Promise(async (resolve, reject) => {
         try {
-            if(!(username || email)){
+            if(!(username || email || userId)){
                 reject({message: "Identifier must be provided!"});
                 return;
             }
-            const user = await User.findOne({$or:[{username}, {email}]});
+            id = new mongoose.Types.ObjectId(id)
+            userId = new mongoose.Types.ObjectId(userId)
+            const user = await User.findOne({
+                $and: [
+                    {
+                        $or:[
+                            {
+                                _id: userId
+                            }, {
+                                username
+                            }, {
+                                email
+                            }
+                        ]
+                    },{
+                        blockedUsers: {
+                            $nin: [
+                                id
+                            ]
+                        }
+                    }
+                ]
+            });
             if(!user?.username){
                 reject({message: "No such user!"});
                 return;
@@ -369,13 +414,14 @@ export const uploadToCloudinary = async (localFilePath) => {
     })
 }
 
-export const usersDetailsFromArray = (usersList) => {
+export const usersDetailsFromArray = ({usersList, userId}) => {
     return new Promise(async (resolve, reject) => {
         try {
             if(!usersList){
                 reject([{message: "usersList is required!"}]);
                 return;
             }
+            userId = new mongoose.Types.ObjectId(userId)
             usersList = usersList.map(id => new mongoose.Types.ObjectId(id));
             User.aggregate([
                 {
@@ -388,21 +434,44 @@ export const usersDetailsFromArray = (usersList) => {
                     $sort: {
                         _id: 1
                     }
+                },{
+                    $project: {
+                        _id: 1,
+                        name: 1,
+                        username: 1,
+                        status: 1,
+                        bio: 1,
+                        profilePicUrl: 1,
+                        blockedStatus: {
+                            $cond: [
+                                {
+                                    $in: [
+                                        userId,
+                                        "$blockedUsers"
+                                    ]
+                                },
+                                true,
+                                false
+                            ]
+                        }
+                    }
                 }
             ]).then((response) => {
                 resolve(response)
             }).catch((error) => {
+                console.log(error);
                 console.log("Database error at userDetailsFromArray");
                 reject([{message: "Database error at userDetailsFromArray"}])
             })
         } catch (error) {
+            console.log(error);
             reject([{message: "Internal error at usersDetailsFromArray"}])
         }
     })
 }
 
 export const followService = ({followingUserId, followedUserId}) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         try {
             if(!(followedUserId && followingUserId)){
                 reject([{message: "followedUserId and followingUserId are required!"}])
@@ -414,6 +483,19 @@ export const followService = ({followingUserId, followedUserId}) => {
             }
             followedUserId = new mongoose.Types.ObjectId(followedUserId);
             followingUserId = new mongoose.Types.ObjectId(followingUserId);
+            const followedUser = await User.findOne({
+                _id: followedUserId,
+                blockedUsers: {
+                    $nin: [
+                        followingUserId
+                    ]
+                }
+            }).catch(() => {
+                return reject([{message: "Database error at followService! (1)"}])
+            })
+            if(!followedUser?.username){
+                return reject([{message: "Can't follow the user!"}])
+            }
             User.bulkWrite([
                 {
                     updateOne: {
@@ -444,11 +526,11 @@ export const followService = ({followingUserId, followedUserId}) => {
                 }).then((response) => {
                     resolve(response);
                 }).catch((error) => {
-                    reject([{message: "Database error at followService (2)!"}])
+                    reject([{message: "Database error at followService (3)!"}])
                 })
             }).catch((error) => {
                 console.log(error);
-                reject([{message: "Database error at followService (1)!"}])
+                reject([{message: "Database error at followService (2)!"}])
             })
         } catch (error) {
             reject([{message: "Internal error at followService!"}])
@@ -592,6 +674,94 @@ export const blockedUsersListService = ({userId}) => {
             })
         } catch (error) {
             reject([{message: "Internal error at blockedUsersListService!"}])
+        }
+    })
+}
+
+export const unblockUserService = ({userId, unblockUserId}) => {
+    return new Promise((resolve, reject) => {
+        try {
+            if(!(userId && unblockUserId)){
+                return reject([{message: "userId and userIdToBeBlocked are required!"}]);
+            }
+            if(userId === unblockUserId){
+                return reject([{message: "userId and userIdToBeBlocked can't be same!"}])
+            }
+            userId = new mongoose.Types.ObjectId(userId);
+            unblockUserId = new mongoose.Types.ObjectId(unblockUserId);
+            User.updateOne({
+                _id: userId
+            },{
+                $pull: {
+                    blockedUsers: unblockUserId
+                }
+            }).then(() => {
+                User.findOne({
+                    _id: userId
+                }).then((response) => {
+                    resolve(response)
+                }).catch((error) => {
+                    reject([{message: "Database error at unblockUserService (2)!"}])
+                })
+            }).catch((error) => {
+                reject([{message: "Database error at unblockUserService (1)!"}])
+            })
+        } catch (error) {
+            reject([{message: "Internal error at unblockUserService!"}])
+        }
+    })
+}
+
+export const shareProfileService = ({userId}) => {
+    return new Promise((resolve, reject) => {
+        try {
+            if(!userId){
+                return reject([{message: "UserId is required!"}])
+            }
+            resolve({url: `http://localhost:3000/profile?userId=${userId}`});
+        } catch (error) {
+            reject([{message: "Internal error at shareProfileService!"}])
+        }
+    })
+}
+
+export const blockedStatusService = ({firstUserId, secondUserId}) => {
+    return new Promise((resolve, reject) => {
+        try {
+            if(!(firstUserId && secondUserId)){
+                return reject([{messsage: "Both userId are requried!"}])
+            }
+            firstUserId = new mongoose.Types.ObjectId(firstUserId);
+            secondUserId = new mongoose.Types.ObjectId(secondUserId);
+            User.findOne({
+                $or: [
+                    {
+                        _id: firstUserId,
+                        blockedUsers: {
+                            $in: [
+                                secondUserId
+                            ]
+                        }
+                    },{
+                        _id: secondUserId,
+                        blockedUsers: {
+                            $in: [
+                                firstUserId
+                            ]
+                        }
+                    }
+                ]
+            }).then((response) => {
+                console.log(response);
+                if(response.username){
+                    return resolve({blockedStatus: true})
+                }
+                return resolve({blockedStatus: false})
+            }).catch((error) => {
+                return reject([{message: "Database error at blockedStatusService!"}])
+            })
+        } catch (error) {
+            reject([{message: "Internal error at blockesStatusService!"}])
         }
     })
 }

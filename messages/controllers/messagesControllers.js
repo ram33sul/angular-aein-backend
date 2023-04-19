@@ -195,9 +195,11 @@ export const getOverallMessages = async (userId) => {
                 messageData.forEach((message) => {
                     foreignIds[foreignIds.length] = message._id;
                 })
-                await axios.post(`${process.env.USER_SERVICE}/usersDetailsFromArray`, { usersList: foreignIds }).then((response) => {
+                await axios.post(`${process.env.USER_SERVICE}/usersDetailsFromArray`, { usersList: foreignIds, userId }).then((response) => {
                     messageData = messageData.map((message, index) => {
                         return {...message, foreignUser: response.data[index]}
+                    }).filter((message) => {
+                        return message.foreignUser.blockedStatus === false;
                     }).sort((a,b) => {
                         return b.sendAt - a.sendAt
                     })
