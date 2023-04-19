@@ -1,4 +1,4 @@
-import { blockUserService, blockedUsersListService, changePasswordService, editProfileService, followService, googleLoginService, loginService, sendSmsOtpService, shareProfileService, signupService, unblockUserService, unfollowService, userDetailsService, usersDetailsFromArray, usersListService, verifySmsOtpService, verifyUserService } from '../services/userServices.js'
+import { blockUserService, blockedUsersListService, changePasswordService, editProfileService, followService, followingList, googleLoginService, loginService, sendSmsOtpService, shareProfileService, signupService, unblockUserService, unfollowService, userDetailsService, usersDetailsFromArray, usersListService, verifySmsOtpService, verifyUserService } from '../services/userServices.js'
 
 export const postLogin = async (req, res) => {
     try {
@@ -263,7 +263,7 @@ export const doShareProfile = (req,res) => {
     }
 }
 
-export const getBlockedStatus = (req,res) =>{
+export const getBlockedStatus = (req,res) => {
     try {
         blockUserService(req.query).then((response) => {
             return res.status(200).json(response)
@@ -274,5 +274,19 @@ export const getBlockedStatus = (req,res) =>{
     } catch (error) {
         console.log("Internal error at getBlockedStatus!");
         return res.status(400).send([{message: "Internal error at getBlockedStatus!"}])
+    }
+}
+
+export const getFollowingList = (req,res) => {
+    try {
+        followingList(req.query).then((response) => {
+            return res.status(200).json(response);
+        }).catch((error) => {
+            console.log(error);
+            return res.status(400).send(error)
+        })
+    } catch (error) {
+        console.log("Internal error at getFollowingList!");
+        return res.status(400).send([{message: "Internal error at getFollowingList!"}]);
     }
 }

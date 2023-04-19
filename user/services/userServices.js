@@ -8,6 +8,7 @@ import { v2 as cloudinary} from 'cloudinary';
 import fs from 'fs';
 import multer from "multer";
 import mongoose, { mongo } from "mongoose";
+import { error } from "console";
 
 export const signupService = ({...data}) => {
     return new Promise(async (resolve, reject) => {
@@ -431,10 +432,6 @@ export const usersDetailsFromArray = ({usersList, userId}) => {
                         }
                     }
                 },{
-                    $sort: {
-                        _id: 1
-                    }
-                },{
                     $project: {
                         _id: 1,
                         name: 1,
@@ -454,6 +451,10 @@ export const usersDetailsFromArray = ({usersList, userId}) => {
                                 false
                             ]
                         }
+                    }
+                },{
+                    $sort: {
+                        _id: 1
                     }
                 }
             ]).then((response) => {
@@ -762,6 +763,26 @@ export const blockedStatusService = ({firstUserId, secondUserId}) => {
             })
         } catch (error) {
             reject([{message: "Internal error at blockesStatusService!"}])
+        }
+    })
+}
+
+export const followingList = ({userId}) => {
+    return new Promise((resolve, reject) => {
+        try {
+            if(!userId){
+                return reject([{message: "UserId is required!"}])
+            }
+            userId = new mongoose.Types.ObjectId(userId);
+            User.findOne({
+                _id: userId
+            }).then((response) => {
+                resolve(response.following);
+            }).catch((error) => {
+                reject([{message: "Database error at followingList!"}])
+            })
+        } catch (error) {
+            reject([{message: "Internal error at followingList!"}])
         }
     })
 }
