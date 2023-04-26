@@ -2,7 +2,7 @@ import express from 'express';
 import router from './routes/route.js';
 import dotenv from 'dotenv';
 import database from './config/database.js';
-import cookeParser from 'cookie-parser';
+import cookieParser from 'cookie-parser';
 
 dotenv.config();
 database();
@@ -10,7 +10,7 @@ database();
 const app = express();
 const PORT = process.env.PORT;
 
-app.use(cookeParser());
+app.use(cookieParser());
 app.use(express.json());
 app.use('/', router)
 

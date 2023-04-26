@@ -43,6 +43,6 @@ router.get('/shareProfile', auth, doShareProfile);
 
 router.get('/blockedStatus', getBlockedStatus);
 
-router.get('/followingList', getFollowingList);
+router.get('/followingList', auth, getFollowingList);
 
 export default router;

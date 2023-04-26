@@ -179,34 +179,58 @@ export const userDetailsService = ({username, email, userId, id}) => {
                 return;
             }
             id = new mongoose.Types.ObjectId(id)
-            userId = new mongoose.Types.ObjectId(userId)
-            const user = await User.findOne({
-                $and: [
-                    {
-                        $or:[
-                            {
-                                _id: userId
-                            }, {
-                                username
-                            }, {
-                                email
-                            }
-                        ]
-                    },{
-                        blockedUsers: {
-                            $nin: [
-                                id
+            let user = {};
+            if(userId == null || userId == 'null'){
+                user = await User.findOne({
+                    $and: [
+                        {
+                            $or:[
+                                {
+                                    username
+                                }, {
+                                    email
+                                }
                             ]
+                        },{
+                            blockedUsers: {
+                                $nin: [
+                                    id
+                                ]
+                            }
                         }
-                    }
-                ]
-            });
+                    ]
+                });
+            } else {
+                userId = new mongoose.Types.ObjectId(userId)
+                user = await User.findOne({
+                    $and: [
+                        {
+                            $or:[
+                                {
+                                    _id: userId
+                                }, {
+                                    username
+                                }, {
+                                    email
+                                }
+                            ]
+                        },{
+                            blockedUsers: {
+                                $nin: [
+                                    id
+                                ]
+                            }
+                        }
+                    ]
+                });
+            }
             if(!user?.username){
                 reject({message: "No such user!"});
                 return;
             }
             resolve(user);
         } catch (error) {
+            console.log(error);
             reject({message: "Internal error occured at userDetailsService"});
         }
     })
@@ -360,7 +384,7 @@ export const editProfileService = ({name, username, bio, profilePic, user}) => {
                 });
             }
             // saving user data in database
-            await User.updateOne({_id: userId},{$set:{name, username, bio}});
+            await User.updateOne({_id: userId},{$set:{name, username, bio, profilePicUrl}});
             const userData = await User.findOne({_id: userId});
             resolve(userData);
         } catch (error) {
@@ -605,13 +629,36 @@ export const blockUserService = ({userId, userIdToBeBlocked}) => {
             }
             userId = new mongoose.Types.ObjectId(userId);
             userIdToBeBlocked = new mongoose.Types.ObjectId(userIdToBeBlocked);
-            User.updateOne({
-                _id: userId
-            },{
-                $addToSet: {
-                    blockedUsers: userIdToBeBlocked
+            User.bulkWrite([
+                {
+                    updateOne: {
+                        filter: {
+                            _id: userId
+                        },
+                        update: {
+                            $addToSet: {
+                                blockedUsers: userIdToBeBlocked
+                            },
+                            $pullAll: {
+                                followers: [userIdToBeBlocked],
+                                following: [userIdToBeBlocked]
+                            }
+                        }
+                    }
+                },{
+                    updateOne: {
+                        filter: {
+                            _id: userIdToBeBlocked
+                        },
+                        update: {
+                            $pullAll: {
+                                followers: [userId],
+                                following: [userId]
+                            }
+                        }
+                    }
                 }
-            }).then(() => {
+            ]).then(() => {
                 User.findOne({
                     _id: userId
                 }).then((response) => {
@@ -753,7 +800,6 @@ export const blockedStatusService = ({firstUserId, secondUserId}) => {
                     }
                 ]
             }).then((response) => {
-                console.log(response);
                 if(response.username){
                     return resolve({blockedStatus: true})
                 }

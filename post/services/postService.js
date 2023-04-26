@@ -25,9 +25,6 @@ export const addPostService = ({messages, userId, withUserId, privacy}) => {
                 reject([{field: "messages", message: isPostValid.message}]);
                 return;
             }
-            messages = messages.map((message) => {
-                return new mongoose.Types.ObjectId(message._id)
-            })
             await Post.create({
                 userId: new mongoose.Types.ObjectId(userId),
                 withUserId: new mongoose.Types.ObjectId(withUserId),
@@ -46,13 +43,17 @@ export const addPostService = ({messages, userId, withUserId, privacy}) => {
 }
 
 
-export const doGetPosts = ({userId}) => {
+export const doGetPosts = ({userId, token}) => {
     return new Promise((resolve, reject) => {
         try {
             if(!userId){
                 return reject([{message: "UserId is required!"}])
             }
-            axios.get(`${process.env.USER_SERVICE}/followingList?userId=${userId}`).then((response) =>{
+            axios.get(`${process.env.USER_SERVICE}/followingList?userId=${userId}`,{
+                headers: {
+                    "aein-app-jwtToken": token
+                }
+            }).then((response) =>{
                 const followingList = response.data.map((id) => {
                     return new mongoose.Types.ObjectId(id);
                 })
@@ -79,6 +80,144 @@ export const doGetPosts = ({userId}) => {
             })
         } catch (error) {
             reject([{message: "Internal error at doGetPosts!"}]);
+        }
+    })
+}
+
+export const explorePostsService = ({userId, token}) => {
+    return new Promise((resolve, reject) => {
+        try {
+            if(!userId){ 
+                return reject([{message: "UserId is required!"}])
+            }
+            axios.get(`${process.env.USER_SERVICE}/blockedUsersList?userId=${userId}`,{
+                headers: {
+                    "aein-app-jwtToken": token
+                }
+            }).then((response) => {
+                const blockedUsersList = response.data.map((res) => {
+                    return new mongoose.Types.ObjectId(res._id);
+                })
+                axios.get(`${process.env.USER_SERVICE}/followingList?userId=${userId}`, {
+                    headers: {
+                        "aein-app-jwtToken": token
+                    }
+                }).then((response) => {
+                    const followingList = response.data.map((id) => {
+                        return new mongoose.Types.ObjectId(id);
+                    })
+                    Post.find({
+                        userId: {
+                            $nin: [...blockedUsersList,...followingList,new mongoose.Types.ObjectId(userId)]
+                        }
+                    }).then((response) => {
+                        resolve(response)
+                    }).catch((error) => {
+                        reject([{message: "Database error at explorePostsService!"}])
+                    })
+                }).catch((error) => {
+                    reject([{message: "Server error at explorePostsService (2)!"}])
+                })
+            }).catch((error) => {
+                console.log(error);
+                reject([{message: "Server error at explorePostsService (1)!"}])
+            })
+        } catch (error){
+            reject([{message: "Internal error at explorePostsService!"}])
+        }
+    })
+}
+
+export const postsByUser = ({userId}) => {
+    return new Promise((resolve, reject) => {
+        try {
+            if(!userId){
+                return reject([{message: "UserId is required!"}])
+            }
+            userId = new mongoose.Types.ObjectId(userId);
+            Post.find({
+                userId
+            }).sort({
+                postedAt: -1
+            }).then((response) => {
+                resolve(response)
+            }).catch((error) => {
+                reject([{message: "Database error at postsByUser!"}])
+            })
+        } catch (error) {
+            reject([{message: "Internal error at postsByUser!"}])
+        }
+    })
+}
+
+export const likePostService = ({userId, postId}) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            let error = []
+            if(!userId){
+                error[error.length] = {field: "userId", message: "userId is required!"}
+            }
+            if(!postId){
+                error[error.length] = {field: "postId", message: "postId is required!"}
+            }
+            if(error.length){
+                return reject(error)
+            }
+            postId = new mongoose.Types.ObjectId(postId);
+            userId = new mongoose.Types.ObjectId(userId);
+            Post.updateOne({
+                _id: postId
+            },{
+                $addToSet: {
+                    likes: userId
+                }
+            }).then(() => {
+                return Post.findOne({
+                    _id: postId
+                })
+            }).then((response) => {
+                resolve(response);
+            }).catch((error) => {
+                reject([{message: "Database error at likePostService!"}]);
+            })
+        } catch (error) {
+            reject([{message: "Internal error at likePostService!"}])
+        }
+    })
+}
+
+export const unlikePostService = ({userId, postId}) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            let error = []
+            if(!userId){
+                error[error.length] = {field: "userId", message: "userId is required!"}
+            }
+            if(!postId){
+                error[error.length] = {field: "postId", message: "postId is required!"}
+            }
+            if(error.length){
+                return reject(error)
+            }
+            postId = new mongoose.Types.ObjectId(postId);
+            userId = new mongoose.Types.ObjectId(userId);
+            Post.updateOne({
+                _id: postId
+            },{
+                $pull: {
+                    likes: userId
+                }
+            }).then(() => {
+                return Post.findOne({
+                    _id: postId
+                })
+            }).then((response) => {
+                resolve(response);
+            }).catch((error) => {
+                reject([{message: "Database error at unlikePostService!"}]);
+            })
+        } catch (error) {
+            reject([{message: "Internal error at unlikePostService!"}])
         }
     })
 }

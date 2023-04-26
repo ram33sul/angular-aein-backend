@@ -1,7 +1,8 @@
 import { verifyUserService } from "../services/userServices.js";
 
 const auth = (req,res,next) => {
-    verifyUserService(req.cookies["aein-app-jwtToken"]).then(({userData}) => {
+    const token = req.cookies["aein-app-jwtToken"] ?? req.headers["aein-app-jwttoken"];
+    verifyUserService(token).then(({userData}) => {
         req.verifiedUser = userData;
         next();
     }).catch((error) => {
