@@ -13,9 +13,9 @@ const postSchema = mongoose.Schema({
     seenBy: {type: Array, default: []},
     likes: {type: Array, default: []},
     dislikes: {type: Array, default: []},
-    comments: {type: Array, default: []},
-    replies: {type: Array, default: []},
-    shares: {type: Array, default: []}
+    commentsCount: {type: Number, default: 0},
+    repliesCount: {type: Number, default: 0},
+    sharesCount: {type: Number, default: 0}
 })
 
 export default mongoose.model("posts", postSchema);

@@ -1,6 +1,6 @@
 import express from 'express';
 import auth from '../authentication/auth.js';
-import { addPost, doLikePost, doUnlikePost, getExplorePosts, getPosts, getPostsByUser } from '../controllers/postController.js';
+import { addPost, doDislikePost, doLikePost, doSendReply, doUndislikePost, doUnlikePost, getComments, getExplorePosts, getPostDetails, getPosts, getPostsByUser, getReplies, postComment } from '../controllers/postController.js';
 
 const router = express.Router();
 
@@ -17,5 +17,19 @@ router.get('/getPostsByUser', getPostsByUser);
 router.patch('/likePost', doLikePost);
 
 router.patch('/unlikePost', doUnlikePost);
+
+router.patch('/dislikePost', doDislikePost);
+
+router.patch('/undislikePost', doUndislikePost);
+
+router.get('/postDetails', getPostDetails);
+
+router.get('/comments', getComments);
+
+router.post('/comment', postComment);
+
+router.get('/replies', getReplies);
+
+router.post('/sendReply', doSendReply)
 
 export default router;

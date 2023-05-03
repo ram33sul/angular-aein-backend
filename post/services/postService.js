@@ -1,6 +1,8 @@
-import mongoose from 'mongoose';
+import mongoose, { mongo } from 'mongoose';
 import Post from '../model/postSchema.js'
+import Comment from '../model/commentSchema.js';
 import { validatePost } from '../../user/validation/validate.js';
+import Reply from '../model/replySchema.js';
 import axios from 'axios';
 
 export const addPostService = ({messages, userId, withUserId, privacy}) => {
@@ -170,6 +172,9 @@ export const likePostService = ({userId, postId}) => {
             },{
                 $addToSet: {
                     likes: userId
+                },
+                $pull: {
+                    dislikes: userId
                 }
             }).then(() => {
                 return Post.findOne({
@@ -218,6 +223,192 @@ export const unlikePostService = ({userId, postId}) => {
             })
         } catch (error) {
             reject([{message: "Internal error at unlikePostService!"}])
+        }
+    })
+}
+
+export const dislikePostService = ({userId, postId}) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            let error = []
+            if(!userId){
+                error[error.length] = {field: "userId", message: "userId is required!"}
+            }
+            if(!postId){
+                error[error.length] = {field: "postId", message: "postId is required!"}
+            }
+            if(error.length){
+                return reject(error)
+            }
+            postId = new mongoose.Types.ObjectId(postId);
+            userId = new mongoose.Types.ObjectId(userId);
+            Post.updateOne({
+                _id: postId
+            },{
+                $addToSet: {
+                    dislikes: userId
+                },
+                $pull: {
+                    likes: userId
+                }
+            }).then(() => {
+                return Post.findOne({
+                    _id: postId
+                })
+            }).then((response) => {
+                resolve(response);
+            }).catch((error) => {
+                reject([{message: "Database error at dislikePostService!"}]);
+            })
+        } catch (error) {
+            reject([{message: "Internal error at dislikePostService!"}])
+        }
+    })
+}
+
+export const undislikePostService = ({userId, postId}) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            let error = []
+            if(!userId){
+                error[error.length] = {field: "userId", message: "userId is required!"}
+            }
+            if(!postId){
+                error[error.length] = {field: "postId", message: "postId is required!"}
+            }
+            if(error.length){
+                return reject(error)
+            }
+            postId = new mongoose.Types.ObjectId(postId);
+            userId = new mongoose.Types.ObjectId(userId);
+            Post.updateOne({
+                _id: postId
+            },{
+                $pull: {
+                    dislikes: userId
+                }
+            }).then(() => {
+                return Post.findOne({
+                    _id: postId
+                })
+            }).then((response) => {
+                resolve(response);
+            }).catch((error) => {
+                reject([{message: "Database error at undislikePostService!"}]);
+            })
+        } catch (error) {
+            reject([{message: "Internal error at undislikePostService!"}])
+        }
+    })
+}
+
+
+
+
+export const postDetailsService = ({id}) => {
+    return new Promise((resolve, reject) => {
+        try {
+            id = new mongoose.Types.ObjectId(id)
+            Post.findOne({_id: id}).then((response) => {
+                resolve(response);
+            }).catch((error) => {
+                reject([{message: "Database error at postDetails!"}])
+            })
+        } catch (error) {
+            reject([{message: "Internal error at postDetailsService!"}])
+        }
+    })
+}
+
+export const getCommentsService = ({postId}) => {
+    return new Promise((resolve, reject) => {
+        try {
+            postId = new mongoose.Types.ObjectId(postId)
+            Comment.find({
+                postId
+            })
+            .sort({
+                at: 1
+            })
+            .then((response) => {
+                resolve(response)
+            }).catch((error) => {
+                reject([{message: "Database error at getCommentsService!"}])
+            })
+        } catch (error) {
+            reject([{message: "Internal error at getCommentsService!"}])
+        }
+    })
+}
+
+export const postCommentService = ({content, userId, postId}) => {
+    return new Promise(async (resolve, reject) => {
+        const session = await mongoose.startSession();
+        session.startTransaction();
+        try {
+            userId = new mongoose.Types.ObjectId(userId)
+            postId = new mongoose.Types.ObjectId(postId)
+            await Comment.create({
+                userId,
+                postId,
+                content
+            })
+            await Post.updateOne({
+                _id: postId
+            },{
+                $inc: {
+                    commentsCount: 1
+                }
+            })
+            await session.commitTransaction();
+            getCommentsService({postId}).then((response) => {
+                resolve(response);
+            }).catch((error) => {
+                reject([{message: "Database error at postCommentService!"}]);
+            })
+        } catch (error) {
+            session.abortTransaction()
+            reject([{message: "Internal error at getCommentsService!"}])
+        } finally {
+            session.endSession();
+        }
+    })
+}
+
+export const sendReplyService = (replyData) => {
+    return new Promise((resolve, reject) => {
+        try {
+            if(!replyData){
+                reject([{message: "ReplyData is required!"}])
+            }
+            replyData.userId = new mongoose.Types.ObjectId(replyData.userId);
+            replyData.postId = new mongoose.Types.ObjectId(replyData.postId)
+            Reply.create(replyData).then((response) => {
+                resolve(response)
+            }).catch((error) => {
+                reject([{message: "Database error at sendReplyService!"}])
+            })
+        } catch (error) {
+            console.log(error);
+            reject([{message: "Internal error at sendReplyService!"}])
+        }
+    })
+}
+
+export const getRepliesService = ({postId}) => {
+    return new Promise((resolve, reject) => {
+        try {
+            if(!postId){
+                reject([{message: "postId is required!"}])
+            }
+            postId = new mongoose.Types.ObjectId(postId);
+            Reply.find({ postId }).then((response) => {
+                resolve(response)
+            }).catch((error) => {
+                reject([{message: "Database error at getRepliesService!"}])
+            })
+        } catch (error) {
+            reject([{message: "Internal error at getRepliesService!"}])
         }
     })
 }
