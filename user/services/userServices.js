@@ -448,6 +448,7 @@ export const usersDetailsFromArray = ({usersList, userId}) => {
             }
             userId = new mongoose.Types.ObjectId(userId)
             usersList = usersList.map(id => new mongoose.Types.ObjectId(id));
+            console.log(usersList);
             User.aggregate([
                 {
                     $match: {
@@ -484,7 +485,6 @@ export const usersDetailsFromArray = ({usersList, userId}) => {
             ]).then((response) => {
                 resolve(response)
             }).catch((error) => {
-                console.log(error);
                 console.log("Database error at userDetailsFromArray");
                 reject([{message: "Database error at userDetailsFromArray"}])
             })

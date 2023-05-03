@@ -1,7 +1,7 @@
 import { createServer } from 'http';
 import express, { response } from 'express';
 import ws, { WebSocketServer } from 'ws';
-import { deleteMessages, doMarkSeen, getMessages, getOverallMessages, sendMessage, verifyUserService } from './controllers/messagesControllers.js';
+import { deleteMessages, doMarkSeen, getMessages, getOverallMessages, sendMessage, shareService, verifyUserService } from './controllers/messagesControllers.js';
 import dotenv from 'dotenv';
 import database from './config/database.js';
 
@@ -89,6 +89,14 @@ wss.on('connection',async (client, req) => {
             const { viewedUser, sentUser } = messageData;
             doMarkSeen({viewedUser, sentUser}).then((response) => {
                 broadcast({ messageData: response, type}, isBinary, {to: sentUser});
+            }).catch((error) => {
+                console.log(error);
+            })
+        } else if (type === 'share'){
+            shareService(messageData).then((response) => {
+                broadcast({ messageData: response, type}, isBinary, {from: messageData.userId, to: messageData.toUserId})
+            }).catch((error) => {
+                console.log(error);
             })
         }
     })

@@ -131,6 +131,7 @@ export const getOverallMessages = async (userId) => {
                         _id: 1,
                         to: 1,
                         from: 1,
+                        type: 1,
                         isNewMessage: {
                             $cond: [
                                 {
@@ -183,6 +184,9 @@ export const getOverallMessages = async (userId) => {
                         },
                         newMessageCount: {
                             $sum: "$isNewMessage"
+                        },
+                        type: {
+                            $first: "$type"
                         }
                     }
                 }, {
@@ -332,6 +336,36 @@ export const deleteMessages = ({messages, userId}) => {
             })
         } catch (error) {
             reject({message: "Internal error occured!"});
+        }
+    })
+}
+
+export const shareService = ({userId, toUserId, content, messageType}) => {
+    return new Promise((resolve, reject) => {
+        try {
+            console.log(content, messageType, userId, toUserId);
+            if(!(content && messageType && userId && toUserId)){
+                reject({message: "data, userId and toUserId is required!"});
+                return;
+            }
+            const from = new mongoose.Types.ObjectId(userId);
+            const to = new mongoose.Types.ObjectId(toUserId);
+            content = new mongoose.Types.ObjectId(content);
+            Messages.create({
+                from,
+                to,
+                content,
+                type: messageType,
+                sendAt: new Date()
+            }).then((response) => {
+                console.log(response);
+                resolve(response)
+            }).catch((error) => {
+                reject({message: "Database error at shareService!"})
+            })
+        } catch (error) {
+            console.log(error);
+            reject({message: "Internal error at shareService!"})
         }
     })
 }

@@ -1,14 +1,15 @@
-var hammingWeight = function(n) {
-    let count = 0;
-    n = n.toString(2);
-    console.log(n);
-    while(n){
-        let rem = n % 10;
-        n = Math.round(n/10);
-    }
-    return count;
-};
+const input = [2,7,11,4,-2];
 
-let num = 11;
+const output = [20,15,11,18,24];
 
-console.log(hammingWeight(num));
+let sum = 0;
+for(let val of input){
+    sum += val
+}
+
+const res = [];
+for(let val of input){
+    res[res.length] = sum - val;
+}
+
+console.log(res);

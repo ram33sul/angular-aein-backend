@@ -302,9 +302,6 @@ export const undislikePostService = ({userId, postId}) => {
     })
 }
 
-
-
-
 export const postDetailsService = ({id}) => {
     return new Promise((resolve, reject) => {
         try {
@@ -376,21 +373,35 @@ export const postCommentService = ({content, userId, postId}) => {
 }
 
 export const sendReplyService = (replyData) => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
+        if(!replyData){
+            reject([{message: "ReplyData is required!"}])
+            return
+        }
+        const session = await mongoose.startSession();
+        session.startTransaction();
         try {
-            if(!replyData){
-                reject([{message: "ReplyData is required!"}])
-            }
             replyData.userId = new mongoose.Types.ObjectId(replyData.userId);
             replyData.postId = new mongoose.Types.ObjectId(replyData.postId)
-            Reply.create(replyData).then((response) => {
+            await Reply.create(replyData).then((response) => {
                 resolve(response)
             }).catch((error) => {
                 reject([{message: "Database error at sendReplyService!"}])
             })
+            await Post.updateOne({
+                _id: replyData.postId
+            },{
+                $inc: {
+                    repliesCount: 1
+                }
+            })
+            await session.commitTransaction();
         } catch (error) {
+            session.abortTransaction()
             console.log(error);
             reject([{message: "Internal error at sendReplyService!"}])
+        } finally {
+            session.endSession();
         }
     })
 }
