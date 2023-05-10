@@ -1,6 +1,21 @@
 import express from 'express';
 import auth from '../authentication/auth.js';
-import { addPost, doDislikePost, doLikePost, doSendReply, doUndislikePost, doUnlikePost, getComments, getExplorePosts, getPostDetails, getPosts, getPostsByUser, getReplies, postComment } from '../controllers/postController.js';
+import {
+    addPost,
+    doDislikePost,
+    doLikePost,
+    doSendReply,
+    doUndislikePost,
+    doUnlikePost,
+    getComments,
+    getExplorePosts,
+    getPostDetails,
+    getPosts,
+    getPostsByUser,
+    getPostsCount,
+    getReplies,
+    postComment
+} from '../controllers/postController.js';
 
 const router = express.Router();
 
@@ -31,5 +46,7 @@ router.post('/comment', postComment);
 router.get('/replies', getReplies);
 
 router.post('/sendReply', doSendReply)
+
+router.get('/postsCount', getPostsCount);
 
 export default router;

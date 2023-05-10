@@ -423,3 +423,32 @@ export const getRepliesService = ({postId}) => {
         }
     })
 }
+
+export const totalPostsCount = () => {
+    return new Promise((resolve, reject) => {
+        Post.find().count().then((response) => {
+            resolve(response)
+        }).catch((error) => {
+            reject([{message: "Database error at totalPostsService!"}])
+        })
+    })
+}
+
+export const totalPostsCountToday = () => {
+    return new Promise ((resolve, reject) => {
+        var start = new Date();
+        start.setHours(0,0,0,0);
+        var end = new Date();
+        end.setHours(23,59,59,999);
+        Post.find({
+            postedAt: {
+                $gte: start,
+                $lt: end
+            }
+        }).count().then((response) => {
+            resolve(response)
+        }).catch(() => {
+            reject([{message: "Database error at totalPostsCountToday!"}])
+        })
+    })
+}

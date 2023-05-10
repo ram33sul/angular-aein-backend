@@ -1,4 +1,4 @@
-import { blockUserService, blockedUsersListService, changePasswordService, editProfileService, followService, followingList, googleLoginService, loginService, sendSmsOtpService, shareProfileService, signupService, unblockUserService, unfollowService, userDetailsService, usersDetailsFromArray, usersListService, verifySmsOtpService, verifyUserService } from '../services/userServices.js'
+import { blockUserService, blockedUsersListService, changePasswordService, editProfileService, followService, followingList, googleLoginService, loginService, sendSmsOtpService, shareProfileService, signupService, totalUsersCount, totalUsersCountToday, unblockUserService, unfollowService, userDetailsService, usersDetailsFromArray, usersListService, verifySmsOtpService, verifyUserService } from '../services/userServices.js'
 
 export const postLogin = async (req, res) => {
     try {
@@ -34,6 +34,7 @@ export const postSignup = async (req, res) => {
 export const verifyUser = async (req, res) => {
     try {
         const token = req.cookies["aein-app-jwtToken"] || req.query.token;
+        console.log(token);
         verifyUserService(token).then((userData) => {
             return res.status(200).json(userData);
         }).catch((error) => {
@@ -288,5 +289,18 @@ export const getFollowingList = (req,res) => {
     } catch (error) {
         console.log("Internal error at getFollowingList!");
         return res.status(400).send([{message: "Internal error at getFollowingList!"}]);
+    }
+}
+
+export const getTotalUsersCount = (req, res) => {
+    try {
+        Promise.allSettled([totalUsersCount(), totalUsersCountToday()]).then((response) => {
+            res.status(200).json(response);
+        }).catch((error) => {
+            req.status(400).send(response);
+        })
+    } catch (error) {
+        console.log("Internal error at getTotalUsersCount");
+        return res.status(400).send([{message: "Internal error at getTotalUsersCount!"}]);
     }
 }

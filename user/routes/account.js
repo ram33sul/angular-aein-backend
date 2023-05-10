@@ -1,5 +1,5 @@
 import express from 'express';
-import { doBlockUser, doChangePassword, doEditProfile, doFollow, doGoogleLogin, doLogout, doSendSmsOtp, doShareProfile, doUnblockUser, doUnfollow, doUsersList, doVerifySmsOtp, getBlockedStatus, getBlockedUsersList, getFollowingList, getUserDetails, getUsersDetailsFromArray, postLogin, postSignup, verifyUser } from '../controllers/userControllers.js';
+import { doBlockUser, doChangePassword, doEditProfile, doFollow, doGoogleLogin, doLogout, doSendSmsOtp, doShareProfile, doUnblockUser, doUnfollow, doUsersList, doVerifySmsOtp, getBlockedStatus, getBlockedUsersList, getFollowingList, getTotalUsersCount, getUserDetails, getUsersDetailsFromArray, postLogin, postSignup, verifyUser } from '../controllers/userControllers.js';
 import auth from '../authentication/auth.js';
 import { fileUploadMulter } from '../services/userServices.js';
 
@@ -44,5 +44,7 @@ router.get('/shareProfile', auth, doShareProfile);
 router.get('/blockedStatus', getBlockedStatus);
 
 router.get('/followingList', auth, getFollowingList);
+
+router.get('/totalUsersCount',auth, getTotalUsersCount);
 
 export default router;

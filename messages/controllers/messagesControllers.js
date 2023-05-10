@@ -275,26 +275,25 @@ export const doMarkSeen = ({viewedUser, sentUser}) => {
     }) 
 }
 
-export const verifyUserService = (cookie) => {
+export const verifyUserService = (cookie, queryToken) => {
     return new Promise(async (resolve, reject) => {
         try {
-            if(!cookie){
-                reject(false);
-                return;
+            let token = queryToken;
+            if(cookie){
+                function cookieToObject(cookieStr) {
+                    const cookieArr = cookieStr.split("; ");
+                    const cookieObj = {};
+                
+                    cookieArr.forEach((pair) => {
+                    const [key, value] = pair.split("=");
+                    cookieObj[key] = value;
+                    });
+                
+                    return cookieObj;
+                }
+                let cookieAsObject = cookieToObject(cookie);
+                token = cookieAsObject["aein-app-jwtToken"];
             }
-            function cookieToObject(cookieStr) {
-                const cookieArr = cookieStr.split("; ");
-                const cookieObj = {};
-              
-                cookieArr.forEach((pair) => {
-                  const [key, value] = pair.split("=");
-                  cookieObj[key] = value;
-                });
-              
-                return cookieObj;
-            }
-            let cookieAsObject = cookieToObject(cookie);
-            const token = cookieAsObject["aein-app-jwtToken"];
             if(!token){
                 reject(false);
                 return;
@@ -303,7 +302,7 @@ export const verifyUserService = (cookie) => {
                 if(error) {
                     reject(false);
                 } else {
-                    resolve(data?.userId);
+                    resolve(data?.userId ?? data?.id);
                 }
             });
         } catch (error) {

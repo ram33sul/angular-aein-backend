@@ -1,10 +1,12 @@
-import { addPostService, dislikePostService, doGetPosts, explorePostsService, getCommentsService, getRepliesService, likePostService, postCommentService, postDetailsService, postsByUser, sendReplyService, undislikePostService, unlikePostService } from "../services/postService.js";
+import { addPostService, dislikePostService, doGetPosts, explorePostsService, getCommentsService, getRepliesService, likePostService, postCommentService, postDetailsService, postsByUser, sendReplyService, totalPostsCount, totalPostsCountToday, undislikePostService, unlikePostService } from "../services/postService.js";
 
 export const addPost = (req,res) => {
     try {
         addPostService({...req.body, userId: req.verifiedUser?._id}).then((response) => {
+            console.log(response);
             res.status(200).json(response);
         }).catch((error) => {
+            console.log(error);
             res.status(400).send(error);
         })
     } catch (error) {
@@ -179,5 +181,19 @@ export const getReplies = (req, res) => {
     } catch (error) {
         res.status(400).send([{message: "Internal error at getReplies!"}])
         console.log("Internal error at getReplies!");
+    }
+}
+
+export const getPostsCount = (req, res) => {
+    try {
+        Promise.allSettled([totalPostsCount(), totalPostsCountToday()])
+        .then((response) => {
+            res.status(200).json(response);
+        }).catch((error) => {
+            res.status(400).send(error)
+        })
+    } catch (error) {
+        res.status(400).send([{message: "Internal error at getTotalPosts!"}])
+        console.log("Internal error at getTotalPosts!");
     }
 }

@@ -1,9 +1,10 @@
 import { createServer } from 'http';
-import express, { response } from 'express';
+import express, { query, response } from 'express';
 import ws, { WebSocketServer } from 'ws';
 import { deleteMessages, doMarkSeen, getMessages, getOverallMessages, sendMessage, shareService, verifyUserService } from './controllers/messagesControllers.js';
 import dotenv from 'dotenv';
 import database from './config/database.js';
+import { messagesCountDetails} from './controllers/adminControllers.js';
 
 
 dotenv.config();
@@ -20,7 +21,7 @@ const chattingClients = new Map();
 wss.on('connection',async (client, req) => {
 
     let userId;
-    await verifyUserService(req.headers.cookie).then((response) => {
+    await verifyUserService(req.headers.cookie, req.url.split('token=')[1]).then((response) => {
         userId = response;
     }).catch((error) => {
         console.log("User cannot be verified!");
@@ -40,6 +41,7 @@ wss.on('connection',async (client, req) => {
     client.on('message', (messageData, isBinary) => {
         messageData = JSON.parse(messageData);
         const type = messageData.type;
+
         if(type === 'sendMessage'){
             const {from, to, content, mood} = messageData;
             sendMessage({from, to, content, mood}).then((response) => {
@@ -95,6 +97,12 @@ wss.on('connection',async (client, req) => {
         } else if (type === 'share'){
             shareService(messageData).then((response) => {
                 broadcast({ messageData: response, type}, isBinary, {from: messageData.userId, to: messageData.toUserId})
+            }).catch((error) => {
+                console.log(error);
+            })
+        } else if (type === 'messagesCountDetails'){
+            messagesCountDetails().then((response) => {
+                broadcast({ messageData: {...response, onlineUsers: clients.size}, type}, isBinary, { to: 'admin'})
             }).catch((error) => {
                 console.log(error);
             })

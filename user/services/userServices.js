@@ -106,12 +106,18 @@ export const verifyUserService = (token) => {
                 if(error) {
                     reject({message: "Token is not valid or expired!"});
                 } else {
-                    const userData = await User.findOne({_id: Object(data?.userId)});
-                    if(!userData){
-                        reject({message: 'No such User!'});
-                        return;
+                    if(data?.userId){
+                        const userData = await User.findOne({_id: new mongoose.Types.ObjectId(data.userId)}).catch((error)=>{
+                            reject({message: "Database error at verifyUserService!"})
+                        });
+                        if(!userData){
+                            reject({message: 'No such User!'});
+                            return;
+                        }
+                        resolve({userData, expiresAt: data.exp * 1000});
+                    } else {
+                        resolve(true)
                     }
-                    resolve({userData, expiresAt: data.exp * 1000});
                 }
             });
         } catch (error) {
@@ -448,7 +454,6 @@ export const usersDetailsFromArray = ({usersList, userId}) => {
             }
             userId = new mongoose.Types.ObjectId(userId)
             usersList = usersList.map(id => new mongoose.Types.ObjectId(id));
-            console.log(usersList);
             User.aggregate([
                 {
                     $match: {
@@ -830,5 +835,34 @@ export const followingList = ({userId}) => {
         } catch (error) {
             reject([{message: "Internal error at followingList!"}])
         }
+    })
+}
+
+export const totalUsersCount = () => {
+    return new Promise((resolve, reject) => {
+        User.find().count().then((response) => {
+            resolve(response)
+        }).catch((error) => {
+            reject([{message: "Database error at totalPostsService!"}])
+        })
+    })
+}
+
+export const totalUsersCountToday = () => {
+    return new Promise ((resolve, reject) => {
+        var start = new Date();
+        start.setHours(0,0,0,0);
+        var end = new Date();
+        end.setHours(23,59,59,999);
+        User.find({
+            createdAt: {
+                $gte: start,
+                $lt: end
+            }
+        }).count().then((response) => {
+            resolve(response)
+        }).catch(() => {
+            reject([{message: "Database error at totalPostsCountToday!"}])
+        })
     })
 }
