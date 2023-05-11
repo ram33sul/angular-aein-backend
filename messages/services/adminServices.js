@@ -1,4 +1,5 @@
 import Messages from "../model/messageSchema.js"
+import Mood from "../model/moodSchema.js";
 
 export const messagedUsersTodayCount = () => {
     return new Promise((resolve, reject) => {
@@ -55,3 +56,35 @@ export const totalMessagesTodayService = () => {
         })
     })
 } 
+
+export const addMoodService = ({name, color}) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            let nameExist = await Mood.findOne({name});
+            let colorExist = await Mood.findOne({color});
+            nameExist = nameExist?.name
+            colorExist = colorExist?.name
+            let error = [];
+            if(nameExist){
+                error[error.length] = {field: "name", message: "Name already exists"}
+            }
+            if(colorExist){
+                error[error.length] = {field: "color", message: "Color already exists"}
+            }
+            if(error.length){
+                return reject(error)
+            }
+            Mood.create({
+                name,
+                color,
+                createdAt: new Date()
+            }).then((response) => {
+                return resolve(response)
+            }).catch((error) => {
+                return reject("Database error at addMood Service")
+            })
+        } catch (error) {
+            return reject("Internal error at addMoodService!")
+        }
+    })
+}
