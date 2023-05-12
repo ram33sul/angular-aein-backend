@@ -4,7 +4,7 @@ import ws, { WebSocketServer } from 'ws';
 import { deleteMessages, doMarkSeen, getMessages, getOverallMessages, sendMessage, shareService, verifyUserService } from './controllers/messagesControllers.js';
 import dotenv from 'dotenv';
 import database from './config/database.js';
-import { addMood, messagesCountDetails} from './controllers/adminControllers.js';
+import { addMood, messagesCountDetails, moodsDetails} from './controllers/adminControllers.js';
 
 
 dotenv.config();
@@ -104,11 +104,17 @@ wss.on('connection',async (client, req) => {
             messagesCountDetails().then((response) => {
                 broadcast({ messageData: {...response, onlineUsers: clients.size}, type}, isBinary, { to: 'admin'})
             }).catch((error) => {
-                console.log(error);
+                broadcast({ error: error, type}, isBinary, { to: 'admin'})
             })
         } else if (type === 'addMood' && userId === 'admin'){
             addMood(messageData?.messageData).then((response) => {
                 broadcast({messageData: response, type}, isBinary, { to: 'admin' })
+            }).catch((error) => {
+                broadcast({ error: error, type}, isBinary, { to: 'admin'})
+            })
+        } else if (type === 'moodsDetails' && userId === 'admin'){
+            moodsDetails().then((response) => {
+                broadcast({messageData: response, type}, isBinary, { to: 'admin'})
             }).catch((error) => {
                 broadcast({ error: error, type}, isBinary, { to: 'admin'})
             })

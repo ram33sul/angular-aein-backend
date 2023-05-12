@@ -88,3 +88,37 @@ export const addMoodService = ({name, color}) => {
         }
     })
 }
+
+export const moodsDetailsService = () => {
+    return new Promise((resolve, reject) => {
+        try {
+            Mood.aggregate([
+                {
+                    $lookup: {
+                        from: 'messages',
+                        localField: '_id',
+                        foreignField: 'mood',
+                        as: "moodCount"
+                    }
+                },{
+                    $project: {
+                        _id: 1,
+                        color: 1,
+                        createdAt: 1,
+                        status: 1,
+                        name: 1,
+                        count: {
+                            $size: "$moodCount"
+                        }
+                    }
+                }
+            ]).then((response) => {
+                resolve(response)
+            }).catch((error) => {
+                reject("Datanase error at moodsDetailsService!")
+            })
+        } catch (error) {
+            reject("Internal error at moodsDetailsService!");
+        }
+    })
+}

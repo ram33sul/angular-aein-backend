@@ -1,4 +1,4 @@
-import { addMoodService, messagedUsersTodayCount, totalMessagesService, totalMessagesTodayService } from '../services/adminServices.js';
+import { addMoodService, messagedUsersTodayCount, moodsDetailsService, totalMessagesService, totalMessagesTodayService } from '../services/adminServices.js';
 
 export const messagesCountDetails = () => {
     return new Promise((resolve, reject) => {
@@ -16,6 +16,16 @@ export const addMood = ({name, color}) => {
     return new Promise((resolve, reject) => {
         addMoodService({name, color}).then((response) => {
             resolve(response)
+        }).catch((error) => {
+            reject(error)
+        })
+    })
+}
+
+export const moodsDetails = () => {
+    return new Promise((resolve, reject) => {
+        moodsDetailsService().then((response) => {
+            resolve(response);
         }).catch((error) => {
             reject(error)
         })
