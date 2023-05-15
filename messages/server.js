@@ -4,7 +4,7 @@ import ws, { WebSocketServer } from 'ws';
 import { deleteMessages, doMarkSeen, getMessages, getOverallMessages, sendMessage, shareService, verifyUserService } from './controllers/messagesControllers.js';
 import dotenv from 'dotenv';
 import database from './config/database.js';
-import { addMood, messagesCountDetails, moodsDetails} from './controllers/adminControllers.js';
+import { addMood, editMood, messagesCountDetails, moodDetails, moodsDetails, recallMood, removeMood} from './controllers/adminControllers.js';
 
 
 dotenv.config();
@@ -118,7 +118,31 @@ wss.on('connection',async (client, req) => {
             }).catch((error) => {
                 broadcast({ error: error, type}, isBinary, { to: 'admin'})
             })
-        }
+        } else if (type === 'moodDetails' && userId === 'admin'){
+            moodDetails(messageData?.messageData).then((response) => {
+                broadcast({messageData: response, type}, isBinary, {to: 'admin'})
+            }).catch((error) => {
+                broadcast({error: error, type}, isBinary, {to: 'admin'})
+            })
+        } else if (type === 'removeMood' && userId === 'admin'){
+            removeMood(messageData?.messageData).then((response) => {
+                broadcast({messageData: response, type}, isBinary, {to: 'admin'})
+            }).catch((error) => {
+                broadcast({error: error, type}, isBinary, {to: 'admin'})
+            })
+        } else if (type === 'recallMood' && userId === 'admin'){
+            recallMood(messageData?.messageData).then((response) => {
+                broadcast({messageData: response, type}, isBinary, {to: 'admin'})
+            }).catch((error) => {
+                broadcast({error: error, type}, isBinary, {to: 'admin'})
+            })
+        } else if (type === 'editMood' && userId === 'admin'){
+            editMood(messageData?.messageData).then((response) => {
+                broadcast({messageData: response, type}, isBinary, {to: 'admin'})
+            }).catch((error) => {
+                broadcast({error: error, type}, isBinary, {to: 'admin'})
+            })
+        } 
     })
 
     client.on("close", () => {

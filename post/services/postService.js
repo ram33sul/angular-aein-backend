@@ -452,3 +452,65 @@ export const totalPostsCountToday = () => {
         })
     })
 }
+
+export const postInteractionsCount = () => {
+    return new Promise((resolve, reject) => {
+        try {
+            Post.aggregate([
+                {
+                    $project: {
+                        likesCount: {
+                            $size: "$likes"
+                        },
+                        dislikesCount: {
+                            $size: "$dislikes"
+                        },
+                        commentsCount: 1,
+                        repliesCount: 1,
+                        sharesCount: 1
+                    }
+                },{
+                    $group: {
+                        _id: null,
+                        likesCount: {
+                            $sum: "$likesCount"
+                        },
+                        dislikesCount: {
+                            $sum: "$dislikesCount"
+                        },
+                        commentsCount: {
+                            $sum: "$commentsCount"
+                        },
+                        repliesCount: {
+                            $sum: "$repliesCount"
+                        },
+                        sharesCount: {
+                            $sum: "$sharesCount"
+                        }
+                    }
+                }
+            ]).then((response) => {
+                resolve(response[0])
+            }).catch((error) => {
+                reject("Database error at postsInteractionsCount")
+            })
+        } catch (error) {
+            reject("Internal error at postsInteractionsCount")
+        }
+    })
+}
+
+
+export const postsDataService = () => {
+    try {
+        return new Promise((resolve, reject) => {
+            Post.find().sort({postedAt: -1}).then((response) => {
+                resolve(response);
+            }).catch((error) => {
+                reject("Database errror at postsDataService!")
+            })
+        })
+    } catch (error) {
+        reject("Internal error at postsDataService!")
+    }
+}

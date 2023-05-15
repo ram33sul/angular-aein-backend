@@ -1,4 +1,4 @@
-import { addMoodService, messagedUsersTodayCount, moodsDetailsService, totalMessagesService, totalMessagesTodayService } from '../services/adminServices.js';
+import { addMoodService, editMoodService, messagedUsersTodayCount, moodDetailsService, moodsDetailsService, recallMoodService, removeMoodService, totalMessagesService, totalMessagesTodayService } from '../services/adminServices.js';
 
 export const messagesCountDetails = () => {
     return new Promise((resolve, reject) => {
@@ -25,6 +25,46 @@ export const addMood = ({name, color}) => {
 export const moodsDetails = () => {
     return new Promise((resolve, reject) => {
         moodsDetailsService().then((response) => {
+            resolve(response);
+        }).catch((error) => {
+            reject(error)
+        })
+    })
+}
+
+export const moodDetails = ({id}) => {
+    return new Promise((resolve, reject) => {
+        moodDetailsService({id}).then((response) => {
+            resolve(response);
+        }).catch((error) => {
+            reject(error)
+        })
+    })
+}
+
+export const removeMood = ({id}) => {
+    return new Promise((resolve, reject) => {
+        removeMoodService({id}).then((response) => {
+            resolve(response);
+        }).catch((error) => {
+            reject(error)
+        })
+    })
+}
+
+export const recallMood = ({id}) => {
+    return new Promise((resolve, reject) => {
+        recallMoodService({id}).then((response) => {
+            resolve(response);
+        }).catch((error) => {
+            reject(error)
+        })
+    })
+}
+
+export const editMood = (data) => {
+    return new Promise((resolve, reject) => {
+        editMoodService(data).then((response) => {
             resolve(response);
         }).catch((error) => {
             reject(error)

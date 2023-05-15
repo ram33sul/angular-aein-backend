@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Messages from "../model/messageSchema.js"
 import Mood from "../model/moodSchema.js";
 
@@ -115,10 +116,120 @@ export const moodsDetailsService = () => {
             ]).then((response) => {
                 resolve(response)
             }).catch((error) => {
-                reject("Datanase error at moodsDetailsService!")
+                reject("Database error at moodsDetailsService!")
             })
         } catch (error) {
             reject("Internal error at moodsDetailsService!");
+        }
+    })
+}
+
+export const moodDetailsService = ({id}) => {
+    return new Promise((resolve, reject) => {
+        try {
+            Mood.findOne({_id: new mongoose.Types.ObjectId(id)}).then((response) => {
+                resolve(response)
+            }).catch((error) => {
+                reject("Database error at moodsDetailsService!")
+            })
+        } catch (error) {
+            reject("Internal error at moodsDetailsService!");
+        }
+    })
+}
+
+export const removeMoodService = ({id}) => {
+    return new Promise((resolve, reject) => {
+        try {
+            id = new mongoose.Types.ObjectId(id)
+            Mood.updateOne({
+                _id: id
+            },{
+                $set:{
+                    status: false
+                }
+            }).then(() => {
+                return Mood.findOne({_id: id})
+            }).then((response) => {
+                resolve(response)
+            }).catch(() => {
+                reject("Database error at removeMoodService")
+            })
+        } catch (error) {
+            reject("Internal error at removeMoodService");
+        }
+    })
+}
+
+export const recallMoodService = ({id}) => {
+    return new Promise((resolve, reject) => {
+        try {
+            id = new mongoose.Types.ObjectId(id)
+            Mood.updateOne({
+                _id: id
+            },{
+                $set:{
+                    status: true
+                }
+            }).then(() => {
+                return Mood.findOne({_id: id})
+            }).then((response) => {
+                resolve(response)
+            }).catch(() => {
+                reject("Database error at recallMoodService")
+            })
+        } catch (error) {
+            reject("Internal error at recallMoodService");
+        }
+    })
+}
+
+export const editMoodService = ({name, color, id}) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            id = new mongoose.Types.ObjectId(id)
+            let nameExist = await Mood.findOne({
+                name,
+                _id: {
+                    $ne: id
+                }
+            });
+            let colorExist = await Mood.findOne({
+                color,
+                _id: {
+                    $ne: id
+                }
+            });
+            nameExist = nameExist?.name
+            colorExist = colorExist?.name
+            let error = [];
+            if(nameExist){
+                error[error.length] = {field: "name", message: "Name already exists"}
+            }
+            if(colorExist){
+                error[error.length] = {field: "color", message: "Color already exists"}
+            }
+            if(error.length){
+                return reject(error)
+            }
+            Mood.updateOne({
+                _id: id
+            },{
+                $set: {
+                    name,
+                    color
+                }
+            }).then((response) => {
+                return Mood.findOne({
+                    _id: id
+                })
+            }).then((response) => {
+                resolve(response)
+            }).catch((error) => {
+                return reject("Database error at addMood Service")
+            })
+        } catch (error) {
+            return reject("Internal error at addMoodService!")
         }
     })
 }

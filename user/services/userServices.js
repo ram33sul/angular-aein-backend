@@ -866,3 +866,13 @@ export const totalUsersCountToday = () => {
         })
     })
 }
+
+export const usersDataService = () => {
+    return new Promise ((resolve, reject) => {
+        User.find().sort({createdAt: -1}).then((response) => {
+            resolve(response);
+        }).catch((error) => {
+            reject("Database error at usersDataService!")
+        })
+    })
+}

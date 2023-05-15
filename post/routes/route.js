@@ -13,6 +13,8 @@ import {
     getPosts,
     getPostsByUser,
     getPostsCount,
+    getPostsData,
+    getPostsInteractionsCount,
     getReplies,
     postComment
 } from '../controllers/postController.js';
@@ -48,5 +50,9 @@ router.get('/replies', getReplies);
 router.post('/sendReply', doSendReply)
 
 router.get('/postsCount', getPostsCount);
+
+router.get('/postsInteractionsCount', getPostsInteractionsCount);
+
+router.get('/postsData', getPostsData);
 
 export default router;

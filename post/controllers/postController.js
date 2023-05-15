@@ -1,4 +1,4 @@
-import { addPostService, dislikePostService, doGetPosts, explorePostsService, getCommentsService, getRepliesService, likePostService, postCommentService, postDetailsService, postsByUser, sendReplyService, totalPostsCount, totalPostsCountToday, undislikePostService, unlikePostService } from "../services/postService.js";
+import { addPostService, dislikePostService, doGetPosts, explorePostsService, getCommentsService, getRepliesService, likePostService, postCommentService, postDetailsService, postInteractionsCount, postsByUser, postsDataService, sendReplyService, totalPostsCount, totalPostsCountToday, undislikePostService, unlikePostService } from "../services/postService.js";
 
 export const addPost = (req,res) => {
     try {
@@ -197,3 +197,30 @@ export const getPostsCount = (req, res) => {
         console.log("Internal error at getTotalPosts!");
     }
 }
+
+export const getPostsInteractionsCount = (req, res) => {
+    try {
+        postInteractionsCount().then((response) => {
+            res.status(200).json(response)
+        }).catch(error => {
+            res.status(400).send(error)
+        })
+    } catch (error) {
+        res.status(400).send("Internal error at getPostsInteractionsCount")
+        console.log("Internal error at getPostsInteractionsCount");
+    }
+}
+
+export const getPostsData = (req, res) => {
+    try {
+        postsDataService().then(response => {
+            res.status(200).json(response);
+        }).catch((error) => {
+            res.status(400).send(error)
+        })
+    } catch (error) {
+        res.status(400).send("Internal error at getPostsData!")
+        console.log("Internal error at getPostsData!");
+    }
+}
+

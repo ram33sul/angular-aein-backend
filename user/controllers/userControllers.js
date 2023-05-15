@@ -1,4 +1,4 @@
-import { blockUserService, blockedUsersListService, changePasswordService, editProfileService, followService, followingList, googleLoginService, loginService, sendSmsOtpService, shareProfileService, signupService, totalUsersCount, totalUsersCountToday, unblockUserService, unfollowService, userDetailsService, usersDetailsFromArray, usersListService, verifySmsOtpService, verifyUserService } from '../services/userServices.js'
+import { blockUserService, blockedUsersListService, changePasswordService, editProfileService, followService, followingList, googleLoginService, loginService, sendSmsOtpService, shareProfileService, signupService, totalUsersCount, totalUsersCountToday, unblockUserService, unfollowService, userDetailsService, usersDataService, usersDetailsFromArray, usersListService, verifySmsOtpService, verifyUserService } from '../services/userServices.js'
 
 export const postLogin = async (req, res) => {
     try {
@@ -90,9 +90,10 @@ export const doUsersList = async (req,res) => {
 export const getUserDetails = async (req,res) => {
     const username = req.query.username ?? req.params.username ?? req.body.username;
     const email = req.query.email ?? req.params.email ?? req.body.email;
-    const userId = req.query.userId ?? req.params.userId ?? req.body.userId;
+    const userId = req.query.userId ?? req.params.userId ?? req.body.userId ?? req.query.id;
+
     try {
-        userDetailsService({username, email, userId, id: req.verifiedUser._id}).then((response) => {
+        userDetailsService({username, email, userId, id: req.verifiedUser?._id}).then((response) => {
             return res.status(200).json(response);
         }).catch((error) => {
             console.log(error);
@@ -297,10 +298,23 @@ export const getTotalUsersCount = (req, res) => {
         Promise.allSettled([totalUsersCount(), totalUsersCountToday()]).then((response) => {
             res.status(200).json(response);
         }).catch((error) => {
-            req.status(400).send(response);
+            res.status(400).send(error);
         })
     } catch (error) {
         console.log("Internal error at getTotalUsersCount");
         return res.status(400).send([{message: "Internal error at getTotalUsersCount!"}]);
+    }
+}
+
+export const getUsersData = (req, res) => {
+    try {
+        usersDataService().then((response) => {
+            res.status(200).json(response);
+        }).catch((error) => {
+            res.status(400).send(error);
+        })
+    } catch (error) {
+        console.log("Internal error at getUsersData");
+        res.status(400).send("Internal erro at getUsersData")
     }
 }
