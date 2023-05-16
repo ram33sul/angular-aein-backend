@@ -514,3 +514,49 @@ export const postsDataService = () => {
         reject("Internal error at postsDataService!")
     }
 }
+
+export const postBlockService = ({id}) => {
+    try {
+        return new Promise((resolve, reject) => {
+            const _id = new mongoose.Types.ObjectId(id);
+            Post.updateOne({
+                _id
+            },{
+                $set: {
+                    status: false
+                }
+            }).then(() => {
+                return Post.findOne({_id});
+            }).then((response) => {
+                resolve(response);
+            }).catch((error) => {
+                reject("Database errror at postBlockService!")
+            })
+        })
+    } catch (error) {
+        reject("Internal error at postsBlockService!")
+    }
+}
+
+export const postUnblockService = ({id}) => {
+    try {
+        return new Promise((resolve, reject) => {
+            const _id = new mongoose.Types.ObjectId(id);
+            Post.updateOne({
+                _id
+            },{
+                $set: {
+                    status: true
+                }
+            }).then(() => {
+                return Post.findOne({_id});
+            }).then((response) => {
+                resolve(response);
+            }).catch((error) => {
+                reject("Database errror at postsUnblockService!")
+            })
+        })
+    } catch (error) {
+        reject("Internal error at postsUnblockService!")
+    }
+}

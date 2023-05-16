@@ -1,4 +1,28 @@
-import { blockUserService, blockedUsersListService, changePasswordService, editProfileService, followService, followingList, googleLoginService, loginService, sendSmsOtpService, shareProfileService, signupService, totalUsersCount, totalUsersCountToday, unblockUserService, unfollowService, userDetailsService, usersDataService, usersDetailsFromArray, usersListService, verifySmsOtpService, verifyUserService } from '../services/userServices.js'
+import {
+    blockUserAdminService,
+    blockUserService,
+    blockedUsersListService,
+    changePasswordService,
+    editProfileService,
+    followService,
+    followingList,
+    googleLoginService,
+    loginService,
+    sendSmsOtpService,
+    shareProfileService,
+    signupService,
+    totalUsersCount,
+    totalUsersCountToday,
+    unblockUserAdminService,
+    unblockUserService,
+    unfollowService,
+    userDetailsService,
+    usersDataService,
+    usersDetailsFromArray,
+    usersListService,
+    verifySmsOtpService,
+    verifyUserService
+} from '../services/userServices.js'
 
 export const postLogin = async (req, res) => {
     try {
@@ -315,6 +339,32 @@ export const getUsersData = (req, res) => {
         })
     } catch (error) {
         console.log("Internal error at getUsersData");
-        res.status(400).send("Internal erro at getUsersData")
+        res.status(400).send("Internal error at getUsersData")
+    }
+}
+
+export const blockUserAdmin = (req, res) => {
+    try {
+        blockUserAdminService(req.query).then((response) => {
+            res.status(200).json(response)
+        }).catch((error) => {
+            res.status(400).send(error)
+        })
+    } catch (error) {
+        console.log("Internal error at blockUserAdmin");
+        res.status(400).send("Internal error at blockUserAdmin")
+    }
+}
+
+export const unblockUserAdmin = (req, res) => {
+    try {
+        unblockUserAdminService(req.query).then((response) => {
+            res.status(200).json(response)
+        }).catch((error) => {
+            res.status(400).send(error)
+        })
+    } catch (error) {
+        console.log("Internal error at blockUserAdmin");
+        res.status(400).send("Internal error at blockUserAdmin")
     }
 }

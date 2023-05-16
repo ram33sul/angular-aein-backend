@@ -71,6 +71,9 @@ export const loginService = ({...data}) => {
             }
             const passwordIsCorrect = await bcrypt.compare(data.password, userData.password);
             if(passwordIsCorrect) {
+                if(!userData?.status){
+                    return reject({field: "usernameOrEmail", message: "You are blocked!"})
+                }
                 const token = signToken(userData._id);
                 resolve({user: userData, token});
             } else {
@@ -113,6 +116,9 @@ export const verifyUserService = (token) => {
                         if(!userData){
                             reject({message: 'No such User!'});
                             return;
+                        }
+                        if(!userData?.status){
+                            return reject({message: "User is blocked!"})
                         }
                         resolve({userData, expiresAt: data.exp * 1000});
                     } else {
@@ -873,6 +879,44 @@ export const usersDataService = () => {
             resolve(response);
         }).catch((error) => {
             reject("Database error at usersDataService!")
+        })
+    })
+}
+
+export const blockUserAdminService = ({id}) => {
+    return new Promise((resolve, reject) => {
+        const _id = new mongoose.Types.ObjectId(id)
+        User.updateOne({
+            _id
+        },{
+            $set:{
+                status: false
+            }
+        }).then(() => {
+            return User.findOne({_id});
+        }).then((response) => {
+            resolve(response)
+        }).catch((error) => {
+            reject("Database error at blockUserAdminService!");
+        })
+    })
+}
+
+export const unblockUserAdminService = ({id}) => {
+    return new Promise((resolve, reject) => {
+        const _id = new mongoose.Types.ObjectId(id)
+        User.updateOne({
+            _id
+        },{
+            $set:{
+                status: true
+            }
+        }).then((res) => {
+            return User.findOne({_id});
+        }).then((response) => {
+            resolve(response)
+        }).catch((error) => {
+            reject("Database error at unblockUserAdminService!");
         })
     })
 }

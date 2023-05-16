@@ -1,4 +1,4 @@
-import { addPostService, dislikePostService, doGetPosts, explorePostsService, getCommentsService, getRepliesService, likePostService, postCommentService, postDetailsService, postInteractionsCount, postsByUser, postsDataService, sendReplyService, totalPostsCount, totalPostsCountToday, undislikePostService, unlikePostService } from "../services/postService.js";
+import { addPostService, dislikePostService, doGetPosts, explorePostsService, getCommentsService, getRepliesService, likePostService, postBlockService, postCommentService, postDetailsService, postInteractionsCount, postUnblockService, postsByUser, postsDataService, sendReplyService, totalPostsCount, totalPostsCountToday, undislikePostService, unlikePostService } from "../services/postService.js";
 
 export const addPost = (req,res) => {
     try {
@@ -223,4 +223,31 @@ export const getPostsData = (req, res) => {
         console.log("Internal error at getPostsData!");
     }
 }
+
+export const postBlock = (req, res) => {
+    try {
+        postBlockService(req.query).then(response => {
+            res.status(200).json(response);
+        }).catch((error) => {
+            res.status(400).send(error)
+        })
+    } catch (error) {
+        res.status(400).send("Internal error at postBlock!")
+        console.log("Internal error at postBlock!");
+    }
+}
+
+export const postUnblock = (req, res) => {
+    try {
+        postUnblockService(req.query).then(response => {
+            res.status(200).json(response);
+        }).catch((error) => {
+            res.status(400).send(error)
+        })
+    } catch (error) {
+        res.status(400).send("Internal error at postUnblock!")
+        console.log("Internal error at postUnblock!");
+    }
+}
+
 

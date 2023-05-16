@@ -1,5 +1,5 @@
 import express from 'express';
-import { doBlockUser, doChangePassword, doEditProfile, doFollow, doGoogleLogin, doLogout, doSendSmsOtp, doShareProfile, doUnblockUser, doUnfollow, doUsersList, doVerifySmsOtp, getBlockedStatus, getBlockedUsersList, getFollowingList, getTotalUsersCount, getUserDetails, getUsersData, getUsersDetailsFromArray, postLogin, postSignup, verifyUser } from '../controllers/userControllers.js';
+import { blockUserAdmin, doBlockUser, doChangePassword, doEditProfile, doFollow, doGoogleLogin, doLogout, doSendSmsOtp, doShareProfile, doUnblockUser, doUnfollow, doUsersList, doVerifySmsOtp, getBlockedStatus, getBlockedUsersList, getFollowingList, getTotalUsersCount, getUserDetails, getUsersData, getUsersDetailsFromArray, postLogin, postSignup, unblockUserAdmin, verifyUser } from '../controllers/userControllers.js';
 import auth from '../authentication/auth.js';
 import { fileUploadMulter } from '../services/userServices.js';
 
@@ -48,5 +48,11 @@ router.get('/followingList', auth, getFollowingList);
 router.get('/totalUsersCount',auth, getTotalUsersCount);
 
 router.get('/usersData', auth, getUsersData);
+
+router.get('/blockUserAdmin', auth, blockUserAdmin);
+
+router.get('/unblockUserAdmin', auth, unblockUserAdmin);
+
+
 
 export default router;

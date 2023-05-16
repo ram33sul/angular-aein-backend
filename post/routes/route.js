@@ -16,7 +16,9 @@ import {
     getPostsData,
     getPostsInteractionsCount,
     getReplies,
-    postComment
+    postBlock,
+    postComment,
+    postUnblock
 } from '../controllers/postController.js';
 
 const router = express.Router();
@@ -54,5 +56,9 @@ router.get('/postsCount', getPostsCount);
 router.get('/postsInteractionsCount', getPostsInteractionsCount);
 
 router.get('/postsData', getPostsData);
+
+router.get('/postBlock', postBlock);
+
+router.get('/postUnblock', postUnblock);
 
 export default router;
