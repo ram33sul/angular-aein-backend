@@ -65,7 +65,8 @@ export const doGetPosts = ({userId, token}) => {
                         $match: {
                             userId: {
                                 $in: followingList
-                            }
+                            },
+                            status: true
                         }
                     },{
                         $sort: {
@@ -111,7 +112,8 @@ export const explorePostsService = ({userId, token}) => {
                     Post.find({
                         userId: {
                             $nin: [...blockedUsersList,...followingList,new mongoose.Types.ObjectId(userId)]
-                        }
+                        },
+                        status: true
                     }).then((response) => {
                         resolve(response)
                     }).catch((error) => {
@@ -138,7 +140,8 @@ export const postsByUser = ({userId}) => {
             }
             userId = new mongoose.Types.ObjectId(userId);
             Post.find({
-                userId
+                userId,
+                status: true
             }).sort({
                 postedAt: -1
             }).then((response) => {
@@ -306,7 +309,7 @@ export const postDetailsService = ({id}) => {
     return new Promise((resolve, reject) => {
         try {
             id = new mongoose.Types.ObjectId(id)
-            Post.findOne({_id: id}).then((response) => {
+            Post.findOne({_id: id, status: true}).then((response) => {
                 resolve(response);
             }).catch((error) => {
                 reject([{message: "Database error at postDetails!"}])
@@ -559,4 +562,36 @@ export const postUnblockService = ({id}) => {
     } catch (error) {
         reject("Internal error at postsUnblockService!")
     }
+}
+
+export const deleteCommentService = ({postId, commentId}) => {
+    return new Promise(async (resolve, reject) => {
+        if(!postId || !commentId){
+            reject([{message: "postId and commentId is required!"}])
+            return
+        }
+        const session = await mongoose.startSession();
+        session.startTransaction();
+        try {
+            await Comment.deleteOne({_id: commentId}).then((response) => {
+                resolve(response)
+            }).catch((error) => {
+                reject([{message: "Database error at deleteCommentService!"}])
+            })
+            await Post.updateOne({
+                _id: postId
+            },{
+                $inc: {
+                    commentsCount: -1
+                }
+            })
+            await session.commitTransaction();
+        } catch (error) {
+            session.abortTransaction()
+            console.log(error);
+            reject([{message: "Internal error at deleteCommentService!"}])
+        } finally {
+            session.endSession();
+        }
+    })
 }

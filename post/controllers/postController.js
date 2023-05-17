@@ -1,4 +1,4 @@
-import { addPostService, dislikePostService, doGetPosts, explorePostsService, getCommentsService, getRepliesService, likePostService, postBlockService, postCommentService, postDetailsService, postInteractionsCount, postUnblockService, postsByUser, postsDataService, sendReplyService, totalPostsCount, totalPostsCountToday, undislikePostService, unlikePostService } from "../services/postService.js";
+import { addPostService, deleteCommentService, dislikePostService, doGetPosts, explorePostsService, getCommentsService, getRepliesService, likePostService, postBlockService, postCommentService, postDetailsService, postInteractionsCount, postUnblockService, postsByUser, postsDataService, sendReplyService, totalPostsCount, totalPostsCountToday, undislikePostService, unlikePostService } from "../services/postService.js";
 
 export const addPost = (req,res) => {
     try {
@@ -250,4 +250,17 @@ export const postUnblock = (req, res) => {
     }
 }
 
+export const deleteComment = (req, res) => {
+    try {
+        deleteCommentService(req.query).then(response => {
+            res.status(200).json(response);
+        }).catch((error) => {
+            console.log(error);
+            res.status(400).send(error)
+        })
+    } catch (error) {
+        res.status(400).send("Internal error at deleteComment!")
+        console.log("Internal error at deleteComment!");
+    }
+}
 

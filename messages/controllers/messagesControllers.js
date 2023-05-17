@@ -2,6 +2,7 @@ import Messages from '../model/messageSchema.js'
 import jwt from 'jsonwebtoken';
 import axios from 'axios';
 import mongoose from 'mongoose';
+import Mood from '../model/moodSchema.js';
 
 export const sendMessage = ({from, to, content, mood}) => {
     return new Promise(async (resolve, reject) => {
@@ -26,6 +27,18 @@ export const sendMessage = ({from, to, content, mood}) => {
             resolve(data);
         } catch (error) {
             reject({message: "Internal error occured at sendMessage!"})
+        }
+    })
+}
+
+export const getMoods = () => {
+    return new Promise((resolve, reject) => {
+        try {
+            Mood.find().then(response => {
+                resolve(response)
+            }).catch({message: "Database error at getMoods"})
+        } catch (error) {
+            reject({message: "Internal error at getMoods"})
         }
     })
 }

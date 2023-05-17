@@ -2,6 +2,7 @@ import express from 'express';
 import auth from '../authentication/auth.js';
 import {
     addPost,
+    deleteComment,
     doDislikePost,
     doLikePost,
     doSendReply,
@@ -60,5 +61,7 @@ router.get('/postsData', getPostsData);
 router.get('/postBlock', postBlock);
 
 router.get('/postUnblock', postUnblock);
+
+router.delete('/deleteComment', deleteComment);
 
 export default router;

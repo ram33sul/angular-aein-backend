@@ -1,7 +1,7 @@
 import { createServer } from 'http';
-import express, { query, response } from 'express';
+import express from 'express';
 import ws, { WebSocketServer } from 'ws';
-import { deleteMessages, doMarkSeen, getMessages, getOverallMessages, sendMessage, shareService, verifyUserService } from './controllers/messagesControllers.js';
+import { deleteMessages, doMarkSeen, getMessages, getMoods, getOverallMessages, sendMessage, shareService, verifyUserService } from './controllers/messagesControllers.js';
 import dotenv from 'dotenv';
 import database from './config/database.js';
 import { addMood, editMood, messagesCountDetails, moodDetails, moodsDetails, recallMood, removeMood} from './controllers/adminControllers.js';
@@ -97,6 +97,12 @@ wss.on('connection',async (client, req) => {
         } else if (type === 'share'){
             shareService(messageData).then((response) => {
                 broadcast({ messageData: response, type}, isBinary, {from: messageData.userId, to: messageData.toUserId})
+            }).catch((error) => {
+                console.log(error);
+            })
+        } else if (type === 'getMoods'){
+            getMoods().then((response) => {
+                broadcast({ messageData: response, type}, isBinary, { to: messageData.userId})
             }).catch((error) => {
                 console.log(error);
             })
