@@ -1,8 +1,18 @@
 import jwt from "jsonwebtoken";
 
-const auth = (cookie) => {
+const auth = (cookie, urlToken) => {
     return new Promise(async (resolve, reject) => {
         try {
+            if(urlToken){
+                jwt.verify(urlToken, process.env.TOKEN_KEY, async (error, data) => {
+                    if(error) {
+                        reject(false);
+                    } else {
+                        resolve(data?.userId ?? data?.id);
+                    }
+                });
+                return;
+            }
             let token;
             if(!cookie){
                 reject(false);

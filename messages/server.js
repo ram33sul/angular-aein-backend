@@ -44,6 +44,7 @@ wss.on('connection',async (client, req) => {
 
         if(type === 'sendMessage'){
             const {from, to, content, mood} = messageData;
+            console.log("send")
             sendMessage({from, to, content, mood}).then((response) => {
                 broadcast({data: response, type: "sendMessage"}, isBinary, {from: response.from.toString(), to: response.to.toString()});
             }).catch((error) => {

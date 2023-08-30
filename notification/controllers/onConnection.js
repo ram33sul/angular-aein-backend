@@ -5,7 +5,7 @@ import onError from './onError.js'
 
 const onConnection = (clients) => {
     return async (client, req) => {
-        const userId = await auth(req.headers.cookie).catch(() => {
+        const userId = await auth(req.headers.cookie, req.url?.split?.('token=')?.[1]).catch(() => {
             client.close();
         })
         if(!userId){

@@ -1,6 +1,7 @@
 export const exists = ({...values}) => {
     let errors = [];
     for(let value in values){
+        console.log(values)
         if(values[value] === undefined || values[value] === null){
             errors[errors.length] = {field: value, message: `${value} is required!`}
         }
@@ -18,6 +19,7 @@ export const validateName = (name) => {
 }
 
 export const validateUsername = (username) => {
+    console.log(username)
     const validValue = /^[A-Za-z0-9]*$/;
     return validValue.test(username) && username.length < 16 && username.length > 3;
     // username must exist
@@ -27,6 +29,7 @@ export const validateUsername = (username) => {
 
 export const validateMobile = (mobile) => {
     const validValue = /^[0-9]*$/;
+    return true
     return mobile.length === 10 && validValue.test(mobile);
     // mobile must exist and only be number;
 }
@@ -49,27 +52,27 @@ export const validateBio = (bio) => {
 
 export const validate = ({...values}) => {
     let errors = []
-    if(values.name){
+    if(values.name || values.name === ''){
         if(!validateName(values.name)){
             errors[errors.length] = {field: 'name', message: 'Name is not valid!'};
         }
     }
-    if(values.username){
+    if(values.username || values.username === ''){
         if(!validateUsername(values.username)){
             errors[errors.length] = {field: 'username', message: 'Username is not valid!'};
         }
     }
-    if(values.email){
+    if(values.email || values.email === ''){
         if(!validateEmail(values.email)){
             errors[errors.length] = {field: 'email', message: 'Email is not valid!'};
         }
     }
-    if(values.mobile){
+    if(values.mobile || values.mobile === 0){
         if(!validateMobile(values.mobile)){
             errors[errors.length] = {field: 'mobile', message: 'Mobile is not valid!'};
         }
     }
-    if(values.password){
+    if(values.password || values.password === ''){
         if(!validatePassword(values.password)){
         errors[errors.length] = {field: 'password', message: 'Make password stronger!'};
         }

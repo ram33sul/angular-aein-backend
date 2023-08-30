@@ -26,6 +26,7 @@ import {
 
 export const postLogin = async (req, res) => {
     try {
+        console.log("hi")
         loginService(req.body).then(async ({user, token}) => {
             res.cookie('aein-app-jwtToken',token, { httpOnly: true });
             return res.status(200).json({user, token});
@@ -57,7 +58,7 @@ export const postSignup = async (req, res) => {
 
 export const verifyUser = async (req, res) => {
     try {
-        const token = req.cookies["aein-app-jwtToken"] || req.query.token;
+        const token = req.cookies["aein-app-jwtToken"] || req.query.token || req.headers.authorization;
         verifyUserService(token).then((userData) => {
             return res.status(200).json(userData);
         }).catch((error) => {

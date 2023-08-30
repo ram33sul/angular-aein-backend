@@ -17,7 +17,7 @@ export const addPost = (req,res) => {
 
 export const getPosts = (req,res) => {
     try {
-        doGetPosts({...req.query, token: req.cookies["aein-app-jwtToken"]}).then((response) => {
+        doGetPosts({...req.query, userId: req.verifiedUser?._id, token: req.cookies["aein-app-jwtToken"] ?? req.verifiedToken}).then((response) => {
             res.status(200).json(response);
         }).catch((error) => {
             console.log(error);
@@ -31,7 +31,7 @@ export const getPosts = (req,res) => {
 
 export const getExplorePosts = (req,res) => {
     try {
-        explorePostsService({...req.query, token: req.cookies["aein-app-jwtToken"]}).then((response) => {
+        explorePostsService({...req.query, token: req.cookies["aein-app-jwtToken"] ?? req.verifiedToken}).then((response) => {
             res.status(200).json(response);
         }).catch((error) => {
             console.log(error);
